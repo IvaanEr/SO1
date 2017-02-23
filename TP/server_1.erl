@@ -1,48 +1,67 @@
 -module(server_1).
 -compile(export_all).
 
-server(Port,LServer) ->
+start(SName,Port) ->
+	net_kernel:start([SName,shortnames]),
+	spawn(?MODULE,server,[Port]).
+
+
+server(Port) ->
+	Resolve = fun (Name,Pid1,Pid2) -> Pid1 end,
 	{ok,LSock} = gen_tcp:listen(Port, [{packet, 0},{active,false}]), %%server escucha en port Port
-    DiccPid = spawn(?MODULE,dicc,[]), %%creo el proceso que maneja el diccionario para los clientes
-    ListPid = spawn(?MODULE,lists_of_games,[[]]), %%crea el proceso que maneja la lista de juegos en curso.
-	dispatcher(LSock,DiccPid,ListPid). %%llamo a dispatcher con el listen socket y el pid de diccionario
+    ClientPid = spawn(?MODULE,list_of_client,[[]]), %%creo el proceso que maneja el diccionario para los clientes
+    yes = global:register_name(clients_pid,ClientPid,Resolve),
+    GamesPid = spawn(?MODULE,lists_of_games,[[]]), %%crea el proceso que maneja la lista de juegos en curso.
+	yes = global:register_name(games_pid,GamesPid,Resolve),
+	dispatcher(LSock). %%llamo a dispatcher con el listen socket
 
-dispatcher(LSock, DiccPid,ListPid) ->
+%% Espera nuevas conexiones y crea un proceso para atender cada una.
+dispatcher(LSock) ->
 	{ok, CSock} = gen_tcp:accept(LSock), %%acepta la conexion del cliente 
-    Pid = spawn(?MODULE, psocket, [CSock,DiccPid,ListPid]),
-    io:format("Todo bien hasta aca ~p ~n",[Pid]),
-    ok = gen_tcp:controlling_process(CSock, Pid), %%Ahora a CSock lo controla Pid -- los mensajes de CSock llegan a Pid
+    Pid = spawn(?MODULE, psocket, [CSock]),
+    %io:format("Todo bien hasta aca ~p ~n",[Pid]),
+    ok = gen_tcp:controlling_process(CSock, Pid), %%Ahora a CSock lo controla Pid -- los mensajes a CSock llegan a Pid
     Pid ! ok,
-    dispatcher(LSock, DiccPid,ListPid).
+    dispatcher(LSock).
 	
-
-psocket(CSock,DiccPid,ListPid) ->
+%Atendera todos los pedidos del cliente hablando en CSock.
+psocket(CSock) ->
 	receive ok -> ok end, %%magia para que controlling process suceda antes que setopts.
-    io:format("Seguimoooooo~n"),	
-	psocket_loop(CSock,DiccPid,ListPid).
+    %io:format("Seguimos~n"),
+    ok = inet:setopts(CSock	,[{active,true}]), %%recivo msjs con receive comun.	
+	gen_tcp:send(CSock,"Bienvenido!\n Recuerda primero debes registrarte con CON\n"),
+	psocket_loop(CSock).
 
-psocket_loop(CSock,DiccPid,ListPid) ->
-	ok = inet:setopts(CSock,[{active,true}]), %%recivo msjs con receive comun.
+psocket_loop(CSock) ->
 	receive
 		{tcp,CSock,Data} ->
-			%io:format("psocket->Binary:~p CSock~p~n",[Data,CSock]),
-			spawn(?MODULE,pcommand,[Data,CSock,DiccPid,ListPid,self()]),
-			psocket_loop(CSock, DiccPid,ListPid);
-		{error,Closed} -> io:format("Closed:~p~n",[Closed]) %%hace falta volver a llamar a psocketloop? chanchanchan
+			case string:tokens(lists:sublist(Data, length(Data)-2)," ") of
+				["CON",Nombre] -> spawn(?MODULE,connect,[Nombre,CSock,self()]),
+								  receive {con,N} -> io:format("registro exitoso~n"),psocket_loop(CSock,N);
+										  {error} -> psocket_loop(CSock)
+								  end;
+				["BYE"] -> ok;
+				Otherwise -> gen_tcp:send(CSock,"Primero debes registrarte con CON\n"),
+							 io:format("Pid: ~p quiere ejecutar comandos sin registrarse~n",[self()]),
+							 psocket_loop(CSock)
+			end;
+		{error,Closed} -> io:format("Closed:~p~n",[Closed]) %%hace falta volver a llamar a psocketloop?
 	end.
 	
+psocket_loop(CSock,N) ->
+	io:format("psocket_loop\2"),
+	receive
+		{tcp,CSock,Data} ->
+			spawn(?MODULE, pcommand, [Data,CSock,N]),
+			psocket_loop(CSock,N);
+		{error,Closed} -> io:format("Closed:~p~n",[Closed])
+	end.	
 
-	%%receive??
-
-pcommand(Data,CSock,DiccPid,ListPid,PSocketPid) ->
-	%io:format("pcommand->Data:~p~n",[Data]),
-	ResList = lists:sublist(Data, length(Data)-2), %%le quitamos el \r\n
-	%io:format("pcommand->Data2:~p~n~nTransform:~p~n",[ResList,string:tokens(ResList," ")]),
-	case string:tokens(ResList," ") of
-	
-		["CON",Nombre] -> connect(Nombre,CSock,DiccPid,PSocketPid);
-		["LSG"] -> lsg(CSock,ListPid,DiccPid);
-		["NEW", NJuego] -> newgame(NJuego,CSock,DiccPid,ListPid);
+pcommand(Data,CSock,N) ->
+	case string:tokens(lists:sublist(Data, length(Data)-2)," ") of
+		["CON",Nombre] -> gen_tcp:send(CSock,"Ya estas registrado\n");
+		["LSG"] -> ok;%lsg(CSock);
+		["NEW", NJuego] -> ok;%newgame(NJuego,CSock,PSocketPid);
 		["ACC", Cmdid,Juegoid] -> ok;
 		["PLA", Cmdid,Juegoid,Jugada] -> ok;
 		["OBS", Cmdid,Juegoid] -> ok;
@@ -55,51 +74,33 @@ pbalance() -> ok.
 
 pstat() -> ok.
 	
-connect(Nombre, CSock, DiccPid,PSocketPid) ->
+connect(Nombre, CSock,PSocketPid) ->
     %io:format("Connect, antes del case~p~n",[DiccPid]),
-    DiccPid ! {req2,self()},
-    receive
-    	{send,Dicc,Dicc_inv} ->
-    		case dict:is_key(Nombre, Dicc) of %%si el nombre no esta en uso...
-        		false -> case dict:is_key(CSock, Dicc_inv) of %%si el Pid no esta registrado.
-        					false -> Dicc2 = dict:store(Nombre, CSock, Dicc), io:format("Dic: ~p~n",[Dicc2]),
-			        				 Dicc_inv2 = dict:store(CSock, Nombre, Dicc_inv), io:format("Dicc_inv: ~p~n",[Dicc_inv2]),
-			        				 %%Dic_inv2 guarda el nombre con los numeros Ascii, pero los imprime/trae bien.
-			        				 %%Prueba = dict:fetch(CSock,Dicc_inv2),
-			        				 %%io:format("Nombre:~p~n",[Prueba]),
-			        				 DiccPid ! {recv,Dicc2,Dicc_inv2},
-			        				 gen_tcp:send(CSock, "OK CON "++Nombre++"\n");
-			        		true -> io:format("ERROR CON "++Nombre++"\n"),
-			        				gen_tcp:send(CSock, "Ya estas registrado, chabon\n"),
-			        				DiccPid ! {recv,Dicc,Dicc_inv}
-			        	 end;
-        		%% si el nombre no existe, lo agrego al diccionario con el Pid del cliente
-        		%% y le envio el nuevo dicc a diccPid
-        		true  -> io:format("ERROR: Nombre usado~n"), %% está de más.
-        				 gen_tcp:send(CSock,"ERROR CON "++Nombre++" No esta disponible\n"),
-        				 DiccPid ! {recv,Dicc,Dicc_inv}
-                 		 %%psocket_loop(CSock,DiccPid,ListPid)
-            end
-    end.          
-		
+    N = list_to_atom(Nombre),
+    io:format("is ~p an atom? ~p ~n",[N,is_atom(N)]),
+    io:format("is ~p a pid? ~p ~n",[PSocketPid,is_pid(PSocketPid)]),
 
-dicc() ->
-	%% io:format("dicc Pid ~p~n",[self()]),
-	Dicc = dict:new(), %%Diccionario para llevar (Nombre,Pid)
-	Dicc_inv = dict:new(), %% Diccionario para llevar (Pid,Nombre).
-	dicc_loop(Dicc,Dicc_inv). 
+    case global:register_name(N,PSocketPid) of
+    	yes -> global:send(clients_pid,{new_client,N}),
+    		   gen_tcp:send(CSock, "OK CON "++Nombre++"\n"),
+    		   io:format("OK CON~n"),
+    		   PSocketPid ! {con,N};
+        no -> io:format("ERROR CON "++Nombre++"\n"),
+			  gen_tcp:send(CSock, "Ya estas registrado o el nombre está en uso\n"),
+			  PSocketPid ! {error}
+ 	end,
 
-dicc_loop(Dicc,Dicc_inv) ->
-	%% io:format("dicc_loop Pid ~p~n",[self()]),
+ 	global:send(clients_pid,{req,self()}),
+ 	receive
+ 		{send,L} -> io:format("Clientes: ~p~n",[L])
+ 	end.
+
+list_of_client(L) ->
     receive
-        {req1,Pid} -> 
-            Pid ! {send,Dicc,Dicc_inv},
-            dicc_loop(Dicc,Dicc_inv);    %% con req1 sabemos que el proceso que pide Dicc no lo va a modificar
-        {req2,Pid} ->           %% con req2 se va a modificar Dicc y esperamos a que llegue el nuevo. 
-            Pid ! {send,Dicc,Dicc_inv},
-            receive  
-                {recv,Dicc1,Dicc_inv1} -> dicc_loop(Dicc1,Dicc_inv1) %% llega el dicc modificado y sigo con ese
-            end
+        {new_client,Client} -> 
+            list_of_client(lists:append(L,[Client]));
+        {req,Pid} -> Pid ! {send,L},
+        			 list_of_client(L)
     end.
 
 lists_of_games(L) ->
@@ -110,19 +111,34 @@ lists_of_games(L) ->
 	end.
 	%%io:format("lists_of_games = ~p || Juego ~p ~n",[L,Juego]).
 
-newgame(NJuego,CSock,DiccPid,ListPid) ->
-	DiccPid ! {req1,self()},
-	receive {send,Dicc,Dicc_inv} -> 
-		case dict:is_key(CSock, Dicc_inv) of %%si es true, es que CSock ya esta registrado.
-			false -> gen_tcp:send(CSock,"Primero registrate,perro\n"),
-					 io:format("ERROR NEW ~p~n",[NJuego]);
-		    true -> PGame = spawn(?MODULE,game,[CSock,NJuego]),
-					global:register_name(NJuego,PGame),
-					gen_tcp:send(CSock,"ok\n")
-					io:format("OK NEW ~p~n",[NJuego]),
-					ListPid ! {new,NJuego}
-		end
-	end.
+% newgame(NJuego,CSock,PSocketPid) ->
+% 	RegisterNames = global:registered_names(),
+% 	RegisterPids  = lists:map(fun (X) -> global:whereis_name(X) end,RegisterNames),
+
+% 	case lists:member(PSocketPid,RegisterPids) of
+% 		false -> gen_tcp:send(CSock, "Antes debes registrarte con CON\n");
+% 		true -> 		
+
+
+
+
+
+
+
+
+	% diccpid ! {req1,self()},
+	% receive {send,Dicc,Dicc_inv} -> 
+	% 	case dict:is_key(CSock, Dicc_inv) of %%si es true, es que CSock ya esta registrado.
+	% 		false -> gen_tcp:send(CSock,"Primero registrate,perro\n"),
+	% 				 io:format("ERROR NEW ~p~n",[NJuego]);
+	% 	    true -> 
+	% 	    		PGame = spawn(?MODULE,game,[CSock,NJuego]),
+	% 				global:register_name(NJuego,PGame),
+	% 				gen_tcp:send(CSock,"ok\n"),
+	% 				io:format("OK NEW ~p~n",[NJuego]),
+	% 				ListPid ! {new,NJuego}
+	% 	end
+	% end.
 
 game(PidJ1,NJuego) ->
 	Tablero = inicializar_tablero(),
