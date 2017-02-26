@@ -2,8 +2,21 @@
 -compile(export_all).
 
 
-mod() ->
-	io:format("~p~n~n~n~p",[module_info(exports),module_info(functions)]).
+help(N) ->
+	% A = "CON 'id', logearse como id\n",
+	B = "LSG, muestra todas las partidas\n",
+	C = "NEW 'juegoid', comienza un nuevo juego como juegoid\n",
+	D = "ACC 'juegoid', accede a jugar al juego juegoid\n",
+	E = "OBS 'juegoid', accede a observar el juego juegoid\n",
+	F = "PLA 'juegoid' 'X', realiza la jugada para juegoid a la casilla X\n    X puede ser un numero entre 1 y 9 o BYE para abandonar\n",
+	G = "LEA 'juegoid', deja de observar juegoid\n",
+	H = "BYE, desconectarse.\n",
+	I = "%| 1 | 2 | 3 |%\n%| 4 | 5 | 6 |%\n%| 7 | 8 | 9 |%\n",
+	J = "%%===========%%\n",
+	K = "   ->Utilizar 'X' de acuerdo al siguiente diagrama\n",
+	Tablero = J++I++J,
+	global:send(N,{print,B++C++D++E++G++H++F++K++Tablero}).	
+
 %Caracter N del tablero D.
 find(N,D) ->
 	case dict:find(N,D) of
@@ -43,6 +56,7 @@ presentacion_j(G,J,T) ->
 presentacion_o(G,J,T,O) ->
 	Aux = "+ "++atom_to_list(G)++" | "++atom_to_list(element(2,lists:nth(1,J)))++" | "++atom_to_list(element(2,lists:nth(2,J)))++" +\n\n",
 	lists:foreach(fun(X) -> global:send(X,{print,Aux}),global:send(X,{print,tprint(T)}) end,O).
+
 
 %Actualizo la casilla C del tablero T, dependiendo de quien es el turno.										
 update(C,T,Turno) ->
