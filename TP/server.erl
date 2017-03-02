@@ -90,8 +90,8 @@ psocket_loop(CSock,N) ->
 												spawn(Nodo,?MODULE, pcommand, [Data,CSock,N]),
 												psocket_loop(CSock,N);
 											{print,Data} -> gen_tcp:send(CSock,Data),psocket_loop(CSock,N);
-											{error,Closed} -> io:format("Closed:~p~n",[Closed]),exit(normal)
-										end
+											{error,Closed} -> io:format("Closed:~p~n",[Closed]),gen_tcp:close(CSock),exit(normal)
+						 				end
 		
 	end.	
 
@@ -104,7 +104,7 @@ pcommand(Data,CSock,N) ->
 		["PLA", NJuego,Casilla] -> jugada(NJuego,Casilla,N);
 		["OBS", NJuego] -> observa(NJuego,N);
 		["LEA", NJuego] -> lea(N,NJuego);
-		["BYE"] -> global:send(clients_pid,{elim,N}),gen_tcp:close(CSock),global:send(N,{error,normal});
+		["BYE"] -> bye(N); %global:send(clients_pid,{elim,N}),gen_tcp:close(CSock),global:send(N,{error,normal});
 		["HELP"] -> game:help(N);
 		Otherwise -> gen_tcp:send(CSock,"Comando Incorrecto. HELP para ayuda\n")
 	end.
@@ -229,12 +229,13 @@ game_init(N,J) ->
 	game(J,Tablero,Jugadores,Observadores,Turno).
 
 %% Maneja el juego J.
+%% Jugadores = [{1,J1},{2,J2}]
 game(J,Tablero,Jugadores,Observadores,Turno) ->
 	receive
 		{datos,Pid} -> Pid ! {send,Jugadores,Observadores}, game(J,Tablero,Jugadores,Observadores,Turno);
 		{datos2,Pid} -> Pid ! {send,Tablero,Jugadores,Observadores,Turno},game(J,Tablero,Jugadores,Observadores,Turno);
 		{update,Jugadores_new,Observadores_new} -> game(J,Tablero,Jugadores_new,Observadores_new,Turno);
-		{update2,TNew,TurnoNew} -> game:upd(J,Jugadores,TNew,Observadores),
+		{update2,TNew,TurnoNew} -> game:upd(J,Jugadores,TNew,Observadores,Turno),
 															 case game:gano(TNew,"X") of
 															 	true -> game:ganoJ1(Jugadores),global:send(games_pid,{elim,J}),exit(normal);
 															 	false -> case game:gano(TNew,"0") of
@@ -247,7 +248,7 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
 		{start} ->%io:format("El jugador es: ~p~n",[es_turno(Turno,Jugadores)]),
 							X = game:es_turno(Turno,Jugadores),
 							global:send(X,{print,"-- Es tu turno "++atom_to_list(X)++" --\n"}),
-							game:upd(J,Jugadores,Tablero,Observadores),
+							game:upd(J,Jugadores,Tablero,Observadores,Turno),
 							game(J,Tablero,Jugadores,Observadores,Turno);
 		bye -> global:send(games_pid,{elim,J}),exit(normal)
 	end.
@@ -256,13 +257,12 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
 
 %%Comando PLA. Actualiza, si esta permitido, la Casilla del juego NJuego.	
 jugada(NJuego,Casilla,N) ->
-	C = list_to_integer(Casilla),
 	J = list_to_atom(NJuego),
 	global:send(games_pid,{req,self()}),
 	receive {send,L} -> 
 		case lists:member(N,L) of
 			  true -> global:send(N,{print,"Juego incorrecto.\n"});
-				false -> ok
+			  false -> ok
 		end
 	end,
 	if Casilla == "BYE" -> %%se puede abandonar la partida con PLA.
@@ -270,6 +270,8 @@ jugada(NJuego,Casilla,N) ->
 		exit(normal);
 			true -> ok
 	end,
+
+	C = list_to_integer(Casilla),
 	global:send(J,{datos2,self()}),
 	receive
 		{send,T,Jugadores,Obs,Turno} ->
@@ -294,17 +296,25 @@ abandona(N,NJuego) ->
 	Nombre = atom_to_list(N),
 	global:send(J,{datos,self()}),
 	receive
-		{send,Jugadores,Observadores} -> 
-			lists:foreach(fun(X)-> global:send(element(2,X),{print,Nombre++" ha abandonado "++NJuego++"\n"}) end,Jugadores)
-	end,
-	global:send(J,bye).
+		{send,Jugadores,Observadores} ->
+			J1 = element(2,lists:nth(1,Jugadores)),
+			J2 = element(2,lists:nth(2,Jugadores)),
+			case J1==N of
+				true -> global:send(J2,{print,Nombre++" ha abandonado "++NJuego++"\n"}),
+								global:send(J1,{print,"OK PLA "++NJuego++" BYE\n"}),
+								global:send(J,bye);
+				false -> global:send(J1,{print,Nombre++" ha abandonado "++NJuego++"\n"}),
+								 global:send(J2,{print,"OK PLA "++NJuego++" BYE\n"}),
+								 global:send(J,bye)
+			end
+	end.
 
 observa(Juego,N) ->
 	J = list_to_atom(Juego),
 	global:send(J,{datos,self()}),
 	receive
 		{send,Jugadores,Observadores} -> 	
-			case -> element(2,lists:nth(1,Jugadores)) == N or element(2,lists:nth(1,Jugadores)) == N of
+			case (element(2,lists:nth(1,Jugadores)) == N) or (element(2,lists:nth(1,Jugadores)) == N) of
 				true -> global:send(N,{print,"No puedes observar un juego en el que participas.\n"});
 				false ->  global:send(games_pid,{req,self()}),
 									receive {send,L} ->
@@ -312,12 +322,12 @@ observa(Juego,N) ->
 											false -> global:send(N,{print,"Juego inexistente\n"});
 											true -> io:format("Observadores: ~p~n",[Observadores++[N]]),
 															global:send(N,{print,"OK OBS "++Juego++"\n"}),
+															%imprimir el tablero en el momento actual.
 															global:send(J,{update,Jugadores,Observadores++[N]})
 										end
 									end
 			end
 	end.							
-
 
 lea(N,NJuego) ->
 	J = list_to_atom(NJuego),
@@ -338,3 +348,34 @@ lea(N,NJuego) ->
 								end
 			end
 	end.
+
+
+bye(N) ->
+	global:send(games_pid,{req,self()}),
+	receive {send,L} ->
+		lists:foreach(fun (X) -> global:send(X,{datos,self()}),
+								 receive
+								 	{send,Jugadores,Observadores} ->
+								 		J1 = element(2,lists:nth(1,Jugadores)),
+								 		if length(Jugadores) == 1 -> %%todavia no hay J2
+								 			global:send(X,bye), global:send(J1,{error,normal});
+								 			true -> 
+										 		J2 = element(2,lists:nth(2,Jugadores)),
+										 		case J1 == N of
+										 			 true -> 
+									 			 		 global:send(J2,{print,atom_to_list(J1)++" ha abandonado.\n"}),
+									 			 		 lists:foreach( fun (X) ->global:send(X,{print,atom_to_list(J1)++" ha abandonado.\n"}) end,Observadores),
+									 			 		 global:send(X,bye), global:send(J1,{error,normal});
+										 			 false -> case J2 == N of
+													 			 			true ->
+													 			 				global:send(J1,{print,atom_to_list(J2)++" ha abandonado.\n"}),
+								 						 			 		  lists:foreach( fun (X) -> global:send(X,{print,atom_to_list(J2)++" ha abandonado.\n"}) end,Observadores),
+								 						 			 		  global:send(X,bye),global:send(J2,{error,normal});
+								 						 			 		false -> 
+								 						 			 			io:format("ERROR BYE\n")	
+								 						 			 	end
+								 				end
+								 		end
+						 			end end, L)
+	end.
+ 

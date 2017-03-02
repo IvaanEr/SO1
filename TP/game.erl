@@ -44,18 +44,22 @@ tprint(D) -> A = "%%===========%%\n",
 						 A++B++A.
 
 %% Envia el juego actualizado a los jugadores y a los observadores.
-upd(Juego,Jugadores,Tablero,Observadores) ->
-	presentacion_j(Juego,Jugadores,Tablero),
-	presentacion_o(Juego,Jugadores,Tablero,Observadores).
+upd(Juego,Jugadores,Tablero,Observadores,Turno) ->
+	presentacion_j(Juego,Jugadores,Tablero,Turno),
+	presentacion_o(Juego,Jugadores,Tablero,Observadores,Turno).
 
 %Para imprimir el tablero con su JuegoID|J1|J2.
-presentacion_j(G,J,T) ->
-	Aux = "+ "++atom_to_list(G)++" | "++atom_to_list(element(2,lists:nth(1,J)))++" | "++atom_to_list(element(2,lists:nth(2,J)))++" +\n\n",
-	lists:foreach(fun(X) -> global:send(element(2,X),{print,Aux}),global:send(element(2,X),{print,tprint(T)}) end,J).
+presentacion_j(G,J,T,Turno) ->
+	Aux = "+ "++atom_to_list(G)++" | "++atom_to_list(element(2,lists:nth(1,J)))++" (X) | "++atom_to_list(element(2,lists:nth(2,J)))++" (0) +\n\n",
+	JAUX = es_turno(Turno,J),
+	% io:format("Pruebaaaa: "++atom_to_list(JAUX)++"~n"),
+	lists:foreach(fun(X) -> global:send(element(2,X),{print,Aux}), global:send(element(2,X),{print,"Turno: "++atom_to_list(JAUX)++"\n"}),global:send(element(2,X),{print,tprint(T)}) end,J).
 
-presentacion_o(G,J,T,O) ->
+presentacion_o(G,J,T,O,Turno) ->
 	Aux = "+ "++atom_to_list(G)++" | "++atom_to_list(element(2,lists:nth(1,J)))++" | "++atom_to_list(element(2,lists:nth(2,J)))++" +\n\n",
-	lists:foreach(fun(X) -> global:send(X,{print,Aux}),global:send(X,{print,tprint(T)}) end,O).
+	JAUX = es_turno(Turno,J),
+	% io:format("Pruebaaaa: "++atom_to_list(JAUX)++"~n"),
+	lists:foreach(fun(X) -> global:send(X,{print,Aux}),global:send(X,{print,"Turno: "++atom_to_list(JAUX)++"\n"}), global:send(X,{print,tprint(T)}) end,O).
 
 
 %Actualizo la casilla C del tablero T, dependiendo de quien es el turno.										
