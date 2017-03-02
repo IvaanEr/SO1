@@ -122,7 +122,7 @@ pstat() ->
 %Recibe lo de pstat y calcula en que nodo se debe ejecutar.
 pbalance(Carga,Nodo) -> 
 	receive
-		{st,C,N} -> case C > Carga of
+		{st,C,N} -> case Carga > C of
 						true -> pbalance(C,N);
 						false -> pbalance(Carga,Nodo)
 					end;
@@ -240,15 +240,22 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
 															 	true -> game:ganoJ1(Jugadores),global:send(games_pid,{elim,J}),exit(normal);
 															 	false -> case game:gano(TNew,"0") of
 															 						true -> game:ganoJ2(Jugadores),global:send(games_pid,{elim,J}),exit(normal);
-															 						false -> X = game:es_turno(TurnoNew,Jugadores),
-															 										 global:send(X,{print,"-- Es tu turno "++atom_to_list(X)++" --\n"}), 
-															 										 game(J,TNew,Jugadores,Observadores,TurnoNew)
+															 						false -> case game:empate(TNew) of
+															 											true -> lists:foreach(fun(X)->global:send(element(2,X),"Han empatado.\n")end,Jugadores),
+															 															lists:foreach(fun(X)->global:send(X,"Han empatado.\n")end,Observadores),
+															 															global:send(games_pid,{elim,J}),exit(normal);
+															 											false -> X = game:es_turno(TurnoNew,Jugadores),
+																				 										 global:send(X,{print,"-- Es tu turno "++atom_to_list(X)++" --\n"}), 
+																				 										 game(J,TNew,Jugadores,Observadores,TurnoNew)
+															 					 					 end
 															 					 end
 															 end; 
 		{start} ->%io:format("El jugador es: ~p~n",[es_turno(Turno,Jugadores)]),
 							X = game:es_turno(Turno,Jugadores),
 							global:send(X,{print,"-- Es tu turno "++atom_to_list(X)++" --\n"}),
-							game:upd(J,Jugadores,Tablero,Observadores,Turno),
+							Aux = "+ "++atom_to_list(J)++" | "++atom_to_list(element(2,lists:nth(1,Jugadores)))++" (X) | "++atom_to_list(element(2,lists:nth(2,Jugadores)))++" (0) +\n\n",
+							lists:foreach(fun(X) -> global:send(element(2,X),{print,Aux}),global:send(element(2,X),{print,game:tprint(Tablero)}) end,Jugadores),
+							lists:foreach(fun(X) -> global:send(X,{print,Aux}),global:send(X,{print,game:tprint(Tablero)}) end,Observadores),
 							game(J,Tablero,Jugadores,Observadores,Turno);
 		bye -> global:send(games_pid,{elim,J}),exit(normal)
 	end.
@@ -311,22 +318,28 @@ abandona(N,NJuego) ->
 
 observa(Juego,N) ->
 	J = list_to_atom(Juego),
-	global:send(J,{datos,self()}),
-	receive
-		{send,Jugadores,Observadores} -> 	
-			case (element(2,lists:nth(1,Jugadores)) == N) or (element(2,lists:nth(1,Jugadores)) == N) of
-				true -> global:send(N,{print,"No puedes observar un juego en el que participas.\n"});
-				false ->  global:send(games_pid,{req,self()}),
-									receive {send,L} ->
-										case lists:member(J,L) of
-											false -> global:send(N,{print,"Juego inexistente\n"});
-											true -> io:format("Observadores: ~p~n",[Observadores++[N]]),
-															global:send(N,{print,"OK OBS "++Juego++"\n"}),
-															%imprimir el tablero en el momento actual.
-															global:send(J,{update,Jugadores,Observadores++[N]})
-										end
+	global:send(games_pid,{req,self()}),
+	receive {send,L} ->
+		case lists:member(J,L) of
+			false -> global:send(N,{print,"Juego inexistente.\n"});
+			true -> global:send(J,{datos2,self()}),
+							receive
+								{send,Tablero,Jugadores,Observadores,Turno} -> 	
+									case (element(2,lists:nth(1,Jugadores)) == N) or (element(2,lists:nth(1,Jugadores)) == N) of
+										true -> global:send(N,{print,"No puedes observar un juego en el que participas.\n"});
+										false ->  global:send(games_pid,{req,self()}),
+															receive {send,L} ->
+																case lists:member(J,L) of
+																	false -> global:send(N,{print,"Juego inexistente\n"});
+																	true -> io:format("Observadores: ~p~n",[Observadores++[N]]),
+																					global:send(N,{print,"OK OBS "++Juego++"\n"}),
+																					game:presentacion_o(J,Jugadores,Tablero,[N],Turno),
+																					global:send(J,{update,Jugadores,Observadores++[N]})
+																end
+															end
 									end
-			end
+							end
+		end
 	end.							
 
 lea(N,NJuego) ->

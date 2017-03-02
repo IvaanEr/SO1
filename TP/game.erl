@@ -41,7 +41,7 @@ inicializar_tablero() ->
 %Cadena para tener el tablero.
 tprint(D) -> A = "%%===========%%\n",
 						 B = "%| "++find(1,D)++" | "++find(2,D)++" | "++find(3,D)++" |%\n%| "++find(4,D)++" | "++find(5,D)++" | "++find(6,D)++" |%\n%| "++find(7,D)++" | "++find(8,D)++" | "++find(9,D)++" |%\n",
-						 A++B++A.
+						 A++B++A++"\n\n".
 
 %% Envia el juego actualizado a los jugadores y a los observadores.
 upd(Juego,Jugadores,Tablero,Observadores,Turno) ->
@@ -134,3 +134,18 @@ es_turno(Turno,Jugadores) ->
 		 					end
 	end.
 	
+
+empate(T) ->
+	A =  (find(1,T) /= " "),
+	B =	 (find(2,T) /= " "),
+	C =	 (find(3,T) /= " "),
+	D =	 (find(4,T) /= " "),
+	F =	 (find(5,T) /= " "),
+	G =	 (find(6,T) /= " "),
+	H =	 (find(7,T) /= " "),
+	I =	 (find(8,T) /= " "),
+	J =	 (find(9,T) /= " "),
+	if ((((((((A and B) and C) and D) and F) and G) and H) and I) and J) ->
+		true;
+	true -> false
+	end.
