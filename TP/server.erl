@@ -237,12 +237,13 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
 		{update,Jugadores_new,Observadores_new} -> game(J,Tablero,Jugadores_new,Observadores_new,Turno);
 		{update2,TNew,TurnoNew} -> game:upd(J,Jugadores,TNew,Observadores,Turno),
 															 case game:gano(TNew,"X") of
-															 	true -> game:ganoJ1(Jugadores),global:send(games_pid,{elim,J}),exit(normal);
+															 	true -> game:ganoJ1(Jugadores,Observadores),global:send(games_pid,{elim,J}),exit(normal);
 															 	false -> case game:gano(TNew,"0") of
-															 						true -> game:ganoJ2(Jugadores),global:send(games_pid,{elim,J}),exit(normal);
-															 						false -> case game:empate(TNew) of
-															 											true -> lists:foreach(fun(X)->global:send(element(2,X),"Han empatado.\n")end,Jugadores),
-															 															lists:foreach(fun(X)->global:send(X,"Han empatado.\n")end,Observadores),
+															 						true -> game:ganoJ2(Jugadores,Observadores),global:send(games_pid,{elim,J}),exit(normal);
+															 						false -> %io:format("Empate: ~p~n",[game:empate(TNew)]),
+															 										 case game:empate(TNew) of
+															 											true -> lists:foreach(fun(X)->global:send(element(2,X),{print,"Han empatado.\n"}) end,Jugadores),
+															 															lists:foreach(fun(X)->global:send(X,{print,"Han empatado.\n"}) end,Observadores),
 															 															global:send(games_pid,{elim,J}),exit(normal);
 															 											false -> X = game:es_turno(TurnoNew,Jugadores),
 																				 										 global:send(X,{print,"-- Es tu turno "++atom_to_list(X)++" --\n"}), 
@@ -254,8 +255,8 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
 							X = game:es_turno(Turno,Jugadores),
 							global:send(X,{print,"-- Es tu turno "++atom_to_list(X)++" --\n"}),
 							Aux = "+ "++atom_to_list(J)++" | "++atom_to_list(element(2,lists:nth(1,Jugadores)))++" (X) | "++atom_to_list(element(2,lists:nth(2,Jugadores)))++" (0) +\n\n",
-							lists:foreach(fun(X) -> global:send(element(2,X),{print,Aux}),global:send(element(2,X),{print,game:tprint(Tablero)}) end,Jugadores),
-							lists:foreach(fun(X) -> global:send(X,{print,Aux}),global:send(X,{print,game:tprint(Tablero)}) end,Observadores),
+							lists:foreach(fun(Y) -> global:send(element(2,Y),{print,Aux}),global:send(element(2,Y),{print,game:tprint(Tablero)}) end,Jugadores),
+							lists:foreach(fun(Z) -> global:send(Z,{print,Aux}),global:send(Z,{print,game:tprint(Tablero)}) end,Observadores),
 							game(J,Tablero,Jugadores,Observadores,Turno);
 		bye -> global:send(games_pid,{elim,J}),exit(normal)
 	end.
@@ -298,21 +299,26 @@ jugada(NJuego,Casilla,N) ->
 			end
 	end.
 
-abandona(N,NJuego) ->
+abandona(N,NJuego) ->	
 	J = list_to_atom(NJuego),
-	Nombre = atom_to_list(N),
+	% Nombre = atom_to_list(N),
 	global:send(J,{datos,self()}),
+
 	receive
 		{send,Jugadores,Observadores} ->
-			J1 = element(2,lists:nth(1,Jugadores)),
-			J2 = element(2,lists:nth(2,Jugadores)),
-			case J1==N of
-				true -> global:send(J2,{print,Nombre++" ha abandonado "++NJuego++"\n"}),
-								global:send(J1,{print,"OK PLA "++NJuego++" BYE\n"}),
-								global:send(J,bye);
-				false -> global:send(J1,{print,Nombre++" ha abandonado "++NJuego++"\n"}),
-								 global:send(J2,{print,"OK PLA "++NJuego++" BYE\n"}),
-								 global:send(J,bye)
+			if 	length(Jugadores) /= 2 -> 
+						game:send_msj_j1(Jugadores,"OK PLA "++NJuego++" BYE\n"),global:send(J,bye);
+					true ->
+					J1 = element(2,lists:nth(1,Jugadores)),
+					J2 = element(2,lists:nth(2,Jugadores)),
+					case N == J1 of
+						true -> global:send(J1,{print,"OK PLA "++NJuego++" BYE\n"}),
+										global:send(J2,{print,atom_to_list(J1)++" abandono "++NJuego++"\n"}),
+										global:send(J,bye);
+						false -> global:send(J2,{print,"OK PLA "++NJuego++" BYE\n"}),
+										global:send(J1,{print,atom_to_list(J2)++" abandono "++NJuego++"\n"}),
+										global:send(J,bye)
+					end
 			end
 	end.
 
@@ -327,15 +333,18 @@ observa(Juego,N) ->
 								{send,Tablero,Jugadores,Observadores,Turno} -> 	
 									case (element(2,lists:nth(1,Jugadores)) == N) or (element(2,lists:nth(1,Jugadores)) == N) of
 										true -> global:send(N,{print,"No puedes observar un juego en el que participas.\n"});
-										false ->  global:send(games_pid,{req,self()}),
-															receive {send,L} ->
-																case lists:member(J,L) of
-																	false -> global:send(N,{print,"Juego inexistente\n"});
-																	true -> io:format("Observadores: ~p~n",[Observadores++[N]]),
-																					global:send(N,{print,"OK OBS "++Juego++"\n"}),
-																					game:presentacion_o(J,Jugadores,Tablero,[N],Turno),
-																					global:send(J,{update,Jugadores,Observadores++[N]})
-																end
+										false ->	case lists:member(N,Observadores) of
+																true -> global:send(N,{print,"Ya estas observando "++Juego++"\n"});
+																false ->  global:send(games_pid,{req,self()}),
+																					receive {send,L} ->
+																						case lists:member(J,L) of
+																							false -> global:send(N,{print,"Juego inexistente\n"});
+																							true -> io:format("Observadores: ~p~n",[Observadores++[N]]),
+																											global:send(N,{print,"OK OBS "++Juego++"\n"}),
+																											game:presentacion_o(J,Jugadores,Tablero,[N],Turno),
+																											global:send(J,{update,Jugadores,Observadores++[N]})
+																						end
+																					end
 															end
 									end
 							end
@@ -353,10 +362,10 @@ lea(N,NJuego) ->
 								receive
 									{send,Jugadores,Observadores} -> 
 											case lists:member(N,Observadores) of
-												false -> global:send(N,{print,"No estas observando"++NJuego++"\n"});
-												true -> L = lists:delete(N,Observadores),
-																global:send(N,{print,"OK LEA"++NJuego++"\n"}),
-																global:send(J,{update,Jugadores,L})
+												false -> global:send(N,{print,"No estas observando "++NJuego++"\n"});
+												true -> Obs_new = lists:delete(N,Observadores),
+																global:send(N,{print,"OK LEA "++NJuego++"\n"}),
+																global:send(J,{update,Jugadores,Obs_new})
 											end
 								end
 			end
