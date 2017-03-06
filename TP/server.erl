@@ -1,17 +1,5 @@
 -module(server).
 -compile(export_all).
-% -import(game,[find/2]).
-% -import(game,[inicializar_tablero/0]).
-% -import(game,[tprint/1]).
-% -import(game,[upd/4]).
-% -import(game,[update/3]).
-% -import(game,[gano/2]).
-% -import(game,[check/3]).
-% -import(game,[ganoJ1/1]).
-% -import(game,[ganoJ2/1]).
-% -import(game,[turno/1]).
-% -import(game,[es_turno/2]).
-% -import(game,[help/1]).
 
 %%=================================================%%
 % Trabajo Practico Final - Sistemas Operativos I    %
@@ -379,25 +367,26 @@ bye(N) ->
 								 receive
 								 	{send,Jugadores,Observadores} ->
 								 		J1 = element(2,lists:nth(1,Jugadores)),
-								 		if length(Jugadores) == 1 -> %%todavia no hay J2
-								 			global:send(X,bye), global:send(J1,{error,normal});
+								 		if (length(Jugadores) == 1) and (J1 == N)-> %%todavia no hay J2
+								 			global:send(X,bye); %global:send(J1,{error,normal});
 								 			true -> 
 										 		J2 = element(2,lists:nth(2,Jugadores)),
 										 		case J1 == N of
 										 			 true -> 
 									 			 		 global:send(J2,{print,atom_to_list(J1)++" ha abandonado.\n"}),
-									 			 		 lists:foreach( fun (X) ->global:send(X,{print,atom_to_list(J1)++" ha abandonado.\n"}) end,Observadores),
-									 			 		 global:send(X,bye), global:send(J1,{error,normal});
+									 			 		 lists:foreach( fun (X) -> global:send(X,{print,atom_to_list(J1)++" ha abandonado.\n"}) end,Observadores),
+									 			 		 global:send(X,bye); %global:send(J1,{error,normal});
 										 			 false -> case J2 == N of
 													 			 			true ->
 													 			 				global:send(J1,{print,atom_to_list(J2)++" ha abandonado.\n"}),
 								 						 			 		  lists:foreach( fun (X) -> global:send(X,{print,atom_to_list(J2)++" ha abandonado.\n"}) end,Observadores),
-								 						 			 		  global:send(X,bye),global:send(J2,{error,normal});
+								 						 			 		  global:send(X,bye); %global:send(J2,{error,normal});
 								 						 			 		false -> 
-								 						 			 			io:format("ERROR BYE\n")	
+								 						 			 			ok %io:format("ERROR BYE\n")	
 								 						 			 	end
 								 				end
 								 		end
-						 			end end, L)
+						 			end end, L),
+		global:send(N,{error,normal})
 	end.
  
