@@ -1,0 +1,102 @@
+
+\documentclass[a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,latexsym}
+\usepackage{syntax}
+\usepackage[margin=1.5cm]{geometry}
+\usepackage{amssymb}
+\usepackage{tipa}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage[version=4]{mhchem}
+
+\newcommand{\dbquote}[1]{\textquotedblleft#1\textquotedblright}
+\newcommand{\blacktr}[0]{\item[$\blacktriangleright$]}
+\newcommand{\emptyc}[0]{\item[$\circ$]}
+
+\setlength{\grammarindent}{2cm}
+
+\lstset{
+  basicstyle=\itshape,
+  xleftmargin=3em,
+  literate={:=}{$\rightarrow$}{2}
+           {α}{$\alpha$}{1}
+           {δ}{$\delta$}{1}
+}
+
+
+\linespread{1.3}
+
+\author{
+        Dzikiewicz, Luis Enrique\\
+        Legajo: D-3850/4\\
+        \texttt{luisdzi.87@gmail.com}
+        \and Ernandorena, Iván\\
+        Legajo: E-1115/1\\
+        \texttt{ivan.ernandorena@gmail.com}
+        \and Güella, Julio\\
+        Legajo: G-5061/1\\
+        \texttt{julioguella@hotmail.com }
+}
+
+\date{
+    Fecha de entrega: -2017
+}
+
+\title {
+    \Huge  \textsc{Trabajo Práctico Final\\}
+    \large \textsc{Sistemas Operativos I}
+}
+
+\begin{document}
+
+
+    \pagenumbering{gobble}
+
+    \maketitle
+
+    \thispagestyle{empty}
+
+    \begin{center}
+         \large \bf Docentes
+    \end{center}
+
+    \begin{center}
+      Guido Macchi
+      
+      Guillermo Grinblat
+
+      José Luis Díaz
+        \vspace{2cm}
+
+        \includegraphics[scale=1.5]{Logo-Unr}
+    
+
+    \end{center}
+
+
+\newpage
+
+%------------------------------------------------------------------------------
+
+
+\pagenumbering{arabic}
+
+\section*{Diseño del trabajo práctico}
+
+El trabajo práctico consta de dos archivos que permiten su funcionamiento:
+\begin{itemize}
+  \blacktr \texttt{server.erl}: En él se encuentra todo lo relacionado a los servidores, conexiones, juegos y comandos.
+  \blacktr \texttt{game.erl}: Se encarga de la interfaz y de la parte visual relacionada a el juego de TA-TE-TI, por ejemplo, se encuentran las funciones encargadas de imprimir la ayuda, el tablero, chequear cuando un jugador gana, etc. 
+\end{itemize}
+
+\subsection*{Conceptos de diseño}
+\begin{itemize}
+  \blacktr Al iniciar un servidor, se crea una lista donde llevar los clientes llamada \texttt{list_of_client}, que se registra globalmente con el nombre de \texttt{clients_pid} y una para llevar las partidas en curso llamada \texttt{lists_of_games}, registrada como \texttt{games_pid}. Además, se da inicio y registro a los procesos de \texttt{pbalance} y \texttt{pstat}, asi como al \texttt{dispatcher}.
+  \blacktr Con respecto al balanceo, la función \texttt{pstat} se encarga de obtener las cargas de los nodos e informarles a los demás nodos sobre las cargas antes obtenidas. Luego, ejecuta \texttt{pbalance} sobre cada nodo y le envia un mensaje con la carga del nodo previamente obtenida con la función \texttt{statistics}. En \texttt{pbalance}, si la carga obtenida por el mensaje es menor a la carga del nodo en la que estoy parado, entonces... Preguntar a Ivan ?)...
+  
+
+\end{itemize}
+
+\end{document}
