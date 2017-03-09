@@ -87,15 +87,18 @@
 
 El trabajo práctico consta de dos archivos que permiten su funcionamiento:
 \begin{itemize}
-  \blacktr \texttt{server.erl}: En él se encuentra todo lo relacionado a los servidores, conexiones, juegos y comandos.
+  \blacktr \texttt{server.erl}: En él se encuentra todo lo relacionado a los servidores. Se tratan las conexiones de los usuarios, creacion de juegos, jugadas, y demás comandos.
   \blacktr \texttt{game.erl}: Se encarga de la interfaz y de la parte visual relacionada a el juego de TA-TE-TI, por ejemplo, se encuentran las funciones encargadas de imprimir la ayuda, el tablero, chequear cuando un jugador gana, etc. 
 \end{itemize}
 
 \subsection*{Conceptos de diseño}
 \begin{itemize}
-  \blacktr Al iniciar un servidor, se crea una lista donde llevar los clientes llamada \texttt{list_of_client}, que se registra globalmente con el nombre de \texttt{clients_pid} y una para llevar las partidas en curso llamada \texttt{lists_of_games}, registrada como \texttt{games_pid}. Además, se da inicio y registro a los procesos de \texttt{pbalance} y \texttt{pstat}, asi como al \texttt{dispatcher}.
-  \blacktr Con respecto al balanceo, la función \texttt{pstat} se encarga de obtener las cargas de los nodos e informarles a los demás nodos sobre las cargas antes obtenidas. Luego, ejecuta \texttt{pbalance} sobre cada nodo y le envia un mensaje con la carga del nodo previamente obtenida con la función \texttt{statistics}. En \texttt{pbalance}, si la carga obtenida por el mensaje es menor a la carga del nodo en la que estoy parado, entonces... Preguntar a Ivan ?)...
-  
+  \blacktr Al iniciar un servidor, se le debe pasar como parametros un nombre para el nodo, el puerto donde va a recibir conexiones entrantes y una lista con los nombres de los demas nodos del sistema, si los hubiera. Crea un nuevo proceso donde se llevara una lista con los nombres de los clientes de todo el sistema distribuido llamado \texttt{list_of_client}, que se registra globalmente con el nombre de \texttt{clients_pid} para poder acceder a este proceso desde cualquier nodo. Se realiza lo mismo, para un proceso registrado globalmente como \texttt{games_pid} para llevar los nombres de las partidas en curso. Además tanto los clientes como las partidas en curso han sido registradas globalmente. Tambien, se da inicio y registro local a los procesos de \texttt{pbalance} y \texttt{pstat}. Luego de iniciar estos procesos claves para el almacenamiento de informacion y funcionamiento del sistema se pasa a la funcion \texttt{dispatcher} con el Socket donde el nodo recibe conexiones entrantes.
+  \blacktr Con respecto al balanceo, la función \texttt{pstat} se encarga de enviarle a la funcion \texttt{pbalance} de todos los nodos el estado de carga de él mismo. Luego, \texttt{pbalance} recibe el estado de carga de todos los nodos y se queda con el nodo de menor carga, asi cuando un proceso desea saber que nodo es el de menor carga, \texttt{pbalance} le envia este nodo.
+  \blacktr Un juego consta de sus jugadores, observadores, el tablero de juego, y de quien es el turno actual. Los jugadores dentro de un juego estan almacenados de la forma \texttt{\{N,Jugador\}}, donde \texttt{N} es un 1 o un 2 correspondiente al turno y \texttt{Jugador} es el nombre registrado globalmente (un atomo). Por diseño, el usuario que crea el juego con el comando \texttt{NEW} va a ser el jugador numero 1 y esté obtendra el primer turno.
+  \blacktr Cuando se realiza un cambio en un juego, el servidor envia automaticamente a cada jugador y observador de ese juego el nuevo tablero indicando quien fue el jugador que realizó esa jugada. Se obvio el comando \texttt{UPD} por esto, ya que esta alternativa parece mas clara y eficiente para los usuarios. 
+
+
 
 \end{itemize}
 

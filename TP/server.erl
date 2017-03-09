@@ -213,7 +213,8 @@ game_init(N,J) ->
 	Tablero = game:inicializar_tablero(),
 	Jugadores = [{1,N}],
 	Observadores = [],
-	Turno = 1,
+	Turno = random:uniform(2), %un numero aleatorio entre 1 y 2, para que no empiece siempre el mismo
+	io:format("Turno: ~p~n",[Turno]),
 	game(J,Tablero,Jugadores,Observadores,Turno).
 
 %% Maneja el juego J.
@@ -255,43 +256,45 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
 jugada(NJuego,Casilla,N) ->
 	J = list_to_atom(NJuego),
 	global:send(games_pid,{req,self()}),
-	receive {send,L} -> 
-		case lists:member(N,L) of
-			  true -> global:send(N,{print,"Juego incorrecto.\n"});
-			  false -> ok
+	receive {send,L} ->
+		case lists:member(J,L) of
+			  false -> global:send(N,{print,"Juego incorrecto.\n"}); %el juego no existe...
+			  true -> 
+			  	if 	Casilla == "BYE" -> %%se puede abandonar la partida con PLA.
+						 		abandona(N,NJuego),
+						 		exit(normal);
+						 	true -> ok
+					end,
+					case (Casilla < "1") or (Casilla > "9") of
+						true -> global:send(N,{print,"Comando incorrecto 2.\n"}),exit(normal);
+						false -> ok
+					end,
+					C = list_to_integer(Casilla),
+					global:send(J,{datos2,self()}),
+					receive
+						{send,T,Jugadores,Obs,Turno} ->
+							case length(Jugadores) /= 2 of 
+								 true -> global:send(N,{print,"ERROR PLA (Jugadores)\n"});
+								 false -> A = element(2,lists:nth(1,Jugadores)), B = element(2,lists:nth(2,Jugadores)),
+								 				 case lists:member(N,[A,B]) and (game:es_turno(Turno,Jugadores) == N) of 
+								 	          	true -> %io:format("C:~p T: ~p A: ~p~n",[Casilla,find(Casilla,T)," " == find(Casilla,T)]),
+								 	          					case game:find(C,T) == " " of 
+								 	          						true -> TNew = game:update(C,T,Turno),
+																								TurnoNew = game:turno(Turno),
+																								global:send(J,{update2,TNew,TurnoNew});
+														 						false -> global:send(N,{print,"ERROR PLA (Casilla)\n"})
+																			end;
+															false -> global:send(N,{print,"ERROR PLA (Jugador/Turno)\n"})
+										     end
+							end
+					end
 		end
-	end,
-	if Casilla == "BYE" -> %%se puede abandonar la partida con PLA.
-		abandona(N,NJuego),
-		exit(normal);
-			true -> ok
-	end,
-
-	C = list_to_integer(Casilla),
-	global:send(J,{datos2,self()}),
-	receive
-		{send,T,Jugadores,Obs,Turno} ->
-			case length(Jugadores) /= 2 of 
-				 true -> global:send(N,{print,"ERROR PLA (Jugadores)\n"});
-				 false -> A = element(2,lists:nth(1,Jugadores)), B = element(2,lists:nth(2,Jugadores)),
-				 				 case lists:member(N,[A,B]) and (game:es_turno(Turno,Jugadores) == N) of 
-				 	          	true -> %io:format("C:~p T: ~p A: ~p~n",[Casilla,find(Casilla,T)," " == find(Casilla,T)]),
-				 	          					case game:find(C,T) == " " of 
-				 	          						true -> TNew = game:update(C,T,Turno),
-																				TurnoNew = game:turno(Turno),
-																				global:send(J,{update2,TNew,TurnoNew});
-										 						false -> global:send(N,{print,"ERROR PLA (Casilla)\n"})
-															end;
-											false -> global:send(N,{print,"ERROR PLA (Jugador/Turno)\n"})
-						     end
-			end
 	end.
-
+	
 abandona(N,NJuego) ->	
 	J = list_to_atom(NJuego),
-	% Nombre = atom_to_list(N),
+	% solo llamo a esta funcion en jugada, donde ya chequie si el juego existe.
 	global:send(J,{datos,self()}),
-
 	receive
 		{send,Jugadores,Observadores} ->
 			if 	length(Jugadores) /= 2 -> 
