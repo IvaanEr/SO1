@@ -12,13 +12,19 @@
 
 %Comienza el sistema distribuido, con hacer ping a un solo nodo basta.
 %Ya que se sincroniza con todo el sistema.
-start(SName,Port,Nodes) ->
+
+start(SName,Port) ->
 	net_kernel:start([SName,shortnames]),
-	if length(Nodes) > 0 ->	
-				pong = net_adm:ping(lists:nth(1,Nodes));
-		 true -> ok
-	end,
 	spawn(?MODULE,server,[Port]).
+
+%% para conectar dos servers en distintas PC's:
+%% Inicializar ambos. En uno de ellos 
+%% >gen_tcp:connect('ip donde esta el otro server','puerto con el que se inicio el nodo',[opciones]).
+%% >net_kernel:connect_node('nombre del nodo').
+
+%% para conectar dos servers en la misma PC:
+%% Inicializar ambos.
+%% >net_kernel:connect_node('nombre del nodo').
 
 server(Port) ->
 	Resolve = fun (Name,Pid1,Pid2) -> Pid1 end,
@@ -92,7 +98,7 @@ pcommand(Data,CSock,N) ->
 		["PLA", NJuego,Casilla] -> jugada(NJuego,Casilla,N);
 		["OBS", NJuego] -> observa(NJuego,N);
 		["LEA", NJuego] -> lea(N,NJuego);
-		["BYE"] -> bye(N); %global:send(clients_pid,{elim,N}),gen_tcp:close(CSock),global:send(N,{error,normal});
+		["BYE"] -> bye(N);
 		["HELP"] -> game:help(N);
 		Otherwise -> gen_tcp:send(CSock,"Comando Incorrecto. HELP para ayuda\n")
 	end.
@@ -120,9 +126,6 @@ pbalance(Carga,Nodo) ->
 %Comando CON. Registra un usuario con Nombre.	
 connect(Nombre, CSock, PSocketPid) ->
 		N = list_to_atom(Nombre),
-		io:format("is ~p an atom? ~p ~n",[N,is_atom(N)]),
-		io:format("is ~p a pid? ~p ~n",[PSocketPid,is_pid(PSocketPid)]),
-
 		case global:register_name(N,PSocketPid) of
 			 yes -> global:send(clients_pid,{new_client,N}),
 					    gen_tcp:send(CSock, "OK CON "++Nombre++"\n"),
@@ -132,11 +135,6 @@ connect(Nombre, CSock, PSocketPid) ->
 				gen_tcp:send(CSock, "Ya estas registrado o el nombre está en uso\n"),
 				PSocketPid ! {error}
 		end.
-	% %Solo para ver que anduvo bien.
-	% global:send(clients_pid,{req,self()}),
-	% receive
-	% 	{send,L} -> io:format("Clientes: ~p~n",[L])
-	% end.
 
 %% Lista de los clientes conectados
 list_of_client(L) ->
@@ -249,7 +247,6 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
 							game(J,Tablero,Jugadores,Observadores,Turno);
 		bye -> global:send(games_pid,{elim,J}),exit(normal)
 	end.
-
 
 
 %%Comando PLA. Actualiza, si esta permitido, la Casilla del juego NJuego.	

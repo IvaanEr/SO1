@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.10.29)  9 MAR 2017 17:28
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.10.29)  11 MAR 2017 20:13
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -525,6 +525,118 @@ Package: ltxcmds 2016/05/16 v1.23 LaTeX kernel commands for general use (HO)
 (/usr/local/texlive/2016/texmf-dist/tex/latex/setspace/setspace.sty
 Package: setspace 2011/12/19 v6.7a set line spacing
 )
+(/usr/local/texlive/2016/texmf-dist/tex/latex/hyperref/hyperref.sty
+Package: hyperref 2016/06/24 v6.83q Hypertext links for LaTeX
+
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/hobsub-hyperref.sty
+Package: hobsub-hyperref 2016/05/16 v1.14 Bundle oberdiek, subset hyperref (HO)
+
+
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/hobsub-generic.sty
+Package: hobsub-generic 2016/05/16 v1.14 Bundle oberdiek, subset generic (HO)
+Package: hobsub 2016/05/16 v1.14 Construct package bundles (HO)
+Package hobsub Info: Skipping package `infwarerr' (already loaded).
+Package hobsub Info: Skipping package `ltxcmds' (already loaded).
+Package: ifluatex 2016/05/16 v1.4 Provides the ifluatex switch (HO)
+Package ifluatex Info: LuaTeX not detected.
+Package hobsub Info: Skipping package `ifvtex' (already loaded).
+Package: intcalc 2016/05/16 v1.2 Expandable calculations with integers (HO)
+Package hobsub Info: Skipping package `ifpdf' (already loaded).
+Package: etexcmds 2016/05/16 v1.6 Avoid name clashes with e-TeX commands (HO)
+Package etexcmds Info: Could not find \expanded.
+(etexcmds)             That can mean that you are not using pdfTeX 1.50 or
+(etexcmds)             that some package has redefined \expanded.
+(etexcmds)             In the latter case, load this package earlier.
+Package: kvsetkeys 2016/05/16 v1.17 Key value parser (HO)
+Package: kvdefinekeys 2016/05/16 v1.4 Define keys (HO)
+Package: pdftexcmds 2016/05/21 v0.22 Utility functions of pdfTeX for LuaTeX (HO
+)
+Package pdftexcmds Info: LuaTeX not detected.
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+Package pdftexcmds Info: \pdfdraftmode found.
+Package: pdfescape 2016/05/16 v1.14 Implements pdfTeX's escape features (HO)
+Package: bigintcalc 2016/05/16 v1.4 Expandable calculations on big integers (HO
+)
+Package: bitset 2016/05/16 v1.2 Handle bit-vector datatype (HO)
+Package: uniquecounter 2016/05/16 v1.3 Provide unlimited unique counter (HO)
+)
+Package hobsub Info: Skipping package `hobsub' (already loaded).
+Package: letltxmacro 2016/05/16 v1.5 Let assignment for LaTeX macros (HO)
+Package: hopatch 2016/05/16 v1.3 Wrapper for package hooks (HO)
+Package: xcolor-patch 2016/05/16 xcolor patch
+Package: atveryend 2016/05/16 v1.9 Hooks at the very end of document (HO)
+Package atveryend Info: \enddocument detected (standard20110627).
+Package: atbegshi 2016/06/09 v1.18 At begin shipout hook (HO)
+Package: refcount 2016/05/16 v3.5 Data extraction from label references (HO)
+Package: hycolor 2016/05/16 v1.8 Color options for hyperref/bookmark (HO)
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/auxhook.sty
+Package: auxhook 2016/05/16 v1.4 Hooks for auxiliary files (HO)
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/kvoptions.sty
+Package: kvoptions 2016/05/16 v3.12 Key value format for package options (HO)
+)
+\@linkdim=\dimen130
+\Hy@linkcounter=\count111
+\Hy@pagecounter=\count112
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/hyperref/pd1enc.def
+File: pd1enc.def 2016/06/24 v6.83q Hyperref: PDFDocEncoding definition (HO)
+Now handling font encoding PD1 ...
+... no UTF-8 mapping file for font encoding PD1
+)
+\Hy@SavedSpaceFactor=\count113
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/latexconfig/hyperref.cfg
+File: hyperref.cfg 2002/06/06 v1.2 hyperref configuration of TeXLive
+)
+Package hyperref Info: Hyper figures OFF on input line 4486.
+Package hyperref Info: Link nesting OFF on input line 4491.
+Package hyperref Info: Hyper index ON on input line 4494.
+Package hyperref Info: Plain pages OFF on input line 4501.
+Package hyperref Info: Backreferencing OFF on input line 4506.
+Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
+Package hyperref Info: Bookmarks ON on input line 4735.
+\c@Hy@tempcnt=\count114
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/url/url.sty
+\Urlmuskip=\muskip11
+Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
+)
+LaTeX Info: Redefining \url on input line 5088.
+\XeTeXLinkMargin=\dimen131
+\Fld@menulength=\count115
+\Field@Width=\dimen132
+\Fld@charsize=\dimen133
+Package hyperref Info: Hyper figures OFF on input line 6342.
+Package hyperref Info: Link nesting OFF on input line 6347.
+Package hyperref Info: Hyper index ON on input line 6350.
+Package hyperref Info: backreferencing OFF on input line 6357.
+Package hyperref Info: Link coloring OFF on input line 6362.
+Package hyperref Info: Link coloring with OCG OFF on input line 6367.
+Package hyperref Info: PDF/A mode OFF on input line 6372.
+LaTeX Info: Redefining \ref on input line 6412.
+LaTeX Info: Redefining \pageref on input line 6416.
+\Hy@abspage=\count116
+\c@Item=\count117
+\c@Hfootnote=\count118
+)
+
+Package hyperref Message: Driver (autodetected): hpdftex.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/hyperref/hpdftex.def
+File: hpdftex.def 2016/06/24 v6.83q Hyperref driver for pdfTeX
+\Fld@listcount=\count119
+\c@bookmark@seq@number=\count120
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/rerunfilecheck.sty
+Package: rerunfilecheck 2016/05/16 v1.8 Rerun checks for auxiliary files (HO)
+Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
+82.
+)
+\Hy@SectionHShift=\skip52
+)
 (/usr/local/texlive/2016/texmf-dist/tex/latex/mhchem/mhchem.sty
 Package: mhchem 2016/08/07 v4.05 for typesetting chemical formulae
 
@@ -541,55 +653,55 @@ L3 Module: l3tl 2016/08/19 v6692 L3 Token lists
 L3 Module: l3str 2016/08/19 v6692 L3 Strings
 L3 Module: l3seq 2016/08/19 v6685 L3 Sequences and stacks
 L3 Module: l3int 2016/09/07 v6700 L3 Integers
-\c_max_int=\count111
-\l_tmpa_int=\count112
-\l_tmpb_int=\count113
-\g_tmpa_int=\count114
-\g_tmpb_int=\count115
+\c_max_int=\count121
+\l_tmpa_int=\count122
+\l_tmpb_int=\count123
+\g_tmpa_int=\count124
+\g_tmpb_int=\count125
 L3 Module: l3quark 2016/08/19 v6685 L3 Quarks
 L3 Module: l3prg 2016/08/18 v6679 L3 Control structures
-\g__prg_map_int=\count116
+\g__prg_map_int=\count126
 L3 Module: l3clist 2016/08/19 v6685 L3 Comma separated lists
 L3 Module: l3token 2016/09/01 v6695 L3 Experimental token manipulation
 L3 Module: l3prop 2016/08/19 v6685 L3 Property lists
 L3 Module: l3msg 2016/08/19 v6691 L3 Messages
 L3 Module: l3file 2016/08/19 v6685 L3 File and I/O operations
-\l_iow_line_count_int=\count117
-\l__iow_target_count_int=\count118
-\l__iow_current_line_int=\count119
-\l__iow_current_word_int=\count120
-\l__iow_current_indentation_int=\count121
+\l_iow_line_count_int=\count127
+\l__iow_target_count_int=\count128
+\l__iow_current_line_int=\count129
+\l__iow_current_word_int=\count130
+\l__iow_current_indentation_int=\count131
 L3 Module: l3skip 2016/08/19 v6692 L3 Dimensions and skips
-\c_zero_dim=\dimen130
-\c_max_dim=\dimen131
-\l_tmpa_dim=\dimen132
-\l_tmpb_dim=\dimen133
-\g_tmpa_dim=\dimen134
-\g_tmpb_dim=\dimen135
-\c_zero_skip=\skip52
-\c_max_skip=\skip53
-\l_tmpa_skip=\skip54
-\l_tmpb_skip=\skip55
-\g_tmpa_skip=\skip56
-\g_tmpb_skip=\skip57
-\c_zero_muskip=\muskip11
-\c_max_muskip=\muskip12
-\l_tmpa_muskip=\muskip13
-\l_tmpb_muskip=\muskip14
-\g_tmpa_muskip=\muskip15
-\g_tmpb_muskip=\muskip16
+\c_zero_dim=\dimen134
+\c_max_dim=\dimen135
+\l_tmpa_dim=\dimen136
+\l_tmpb_dim=\dimen137
+\g_tmpa_dim=\dimen138
+\g_tmpb_dim=\dimen139
+\c_zero_skip=\skip53
+\c_max_skip=\skip54
+\l_tmpa_skip=\skip55
+\l_tmpb_skip=\skip56
+\g_tmpa_skip=\skip57
+\g_tmpb_skip=\skip58
+\c_zero_muskip=\muskip12
+\c_max_muskip=\muskip13
+\l_tmpa_muskip=\muskip14
+\l_tmpb_muskip=\muskip15
+\g_tmpa_muskip=\muskip16
+\g_tmpb_muskip=\muskip17
 L3 Module: l3keys 2016/09/21 v6711 L3 Key-value interfaces
-\l_keys_choice_int=\count122
+\l_keys_choice_int=\count132
 L3 Module: l3fp 2016/08/19 v6685 L3 Floating points
-\c__fp_leading_shift_int=\count123
-\c__fp_middle_shift_int=\count124
-\c__fp_trailing_shift_int=\count125
-\c__fp_big_leading_shift_int=\count126
-\c__fp_big_middle_shift_int=\count127
-\c__fp_big_trailing_shift_int=\count128
-\c__fp_Bigg_leading_shift_int=\count129
-\c__fp_Bigg_middle_shift_int=\count130
-\c__fp_Bigg_trailing_shift_int=\count131
+\c__fp_leading_shift_int=\count133
+\c__fp_middle_shift_int=\count134
+\c__fp_trailing_shift_int=\count135
+\c__fp_big_leading_shift_int=\count136
+\c__fp_big_middle_shift_int=\count137
+\c__fp_big_trailing_shift_int=\count138
+\c__fp_Bigg_leading_shift_int=\count139
+\c__fp_Bigg_middle_shift_int=\count140
+\c__fp_Bigg_trailing_shift_int=\count141
 L3 Module: l3box 2016/08/19 v6685 L3 Experimental boxes
 \c_empty_box=\box30
 \l_tmpa_box=\box31
@@ -598,13 +710,13 @@ L3 Module: l3box 2016/08/19 v6685 L3 Experimental boxes
 \g_tmpb_box=\box34
 L3 Module: l3coffins 2016/08/19 v6685 L3 Coffin code layer
 \l__coffin_internal_box=\box35
-\l__coffin_internal_dim=\dimen136
-\l__coffin_offset_x_dim=\dimen137
-\l__coffin_offset_y_dim=\dimen138
-\l__coffin_x_dim=\dimen139
-\l__coffin_y_dim=\dimen140
-\l__coffin_x_prime_dim=\dimen141
-\l__coffin_y_prime_dim=\dimen142
+\l__coffin_internal_dim=\dimen140
+\l__coffin_offset_x_dim=\dimen141
+\l__coffin_offset_y_dim=\dimen142
+\l__coffin_x_dim=\dimen143
+\l__coffin_y_dim=\dimen144
+\l__coffin_x_prime_dim=\dimen145
+\l__coffin_y_prime_dim=\dimen146
 \c_empty_coffin=\box36
 \l__coffin_aligned_coffin=\box37
 \l__coffin_aligned_internal_coffin=\box38
@@ -613,33 +725,33 @@ L3 Module: l3coffins 2016/08/19 v6685 L3 Coffin code layer
 \l__coffin_display_coffin=\box41
 \l__coffin_display_coord_coffin=\box42
 \l__coffin_display_pole_coffin=\box43
-\l__coffin_display_offset_dim=\dimen143
-\l__coffin_display_x_dim=\dimen144
-\l__coffin_display_y_dim=\dimen145
+\l__coffin_display_offset_dim=\dimen147
+\l__coffin_display_x_dim=\dimen148
+\l__coffin_display_y_dim=\dimen149
 L3 Module: l3color 2016/06/13 v6596 L3 Experimental color support
 L3 Module: l3sys 2015/09/25 v6087 L3 Experimental system/runtime functions
 L3 Module: l3candidates 2016/08/19 v6688 L3 Experimental additions to l3kernel
-\l__box_top_dim=\dimen146
-\l__box_bottom_dim=\dimen147
-\l__box_left_dim=\dimen148
-\l__box_right_dim=\dimen149
-\l__box_top_new_dim=\dimen150
-\l__box_bottom_new_dim=\dimen151
-\l__box_left_new_dim=\dimen152
-\l__box_right_new_dim=\dimen153
+\l__box_top_dim=\dimen150
+\l__box_bottom_dim=\dimen151
+\l__box_left_dim=\dimen152
+\l__box_right_dim=\dimen153
+\l__box_top_new_dim=\dimen154
+\l__box_bottom_new_dim=\dimen155
+\l__box_left_new_dim=\dimen156
+\l__box_right_new_dim=\dimen157
 \l__box_internal_box=\box44
-\l__coffin_bounding_shift_dim=\dimen154
-\l__coffin_left_corner_dim=\dimen155
-\l__coffin_right_corner_dim=\dimen156
-\l__coffin_bottom_corner_dim=\dimen157
-\l__coffin_top_corner_dim=\dimen158
-\l__coffin_scaled_total_height_dim=\dimen159
-\l__coffin_scaled_width_dim=\dimen160
+\l__coffin_bounding_shift_dim=\dimen158
+\l__coffin_left_corner_dim=\dimen159
+\l__coffin_right_corner_dim=\dimen160
+\l__coffin_bottom_corner_dim=\dimen161
+\l__coffin_top_corner_dim=\dimen162
+\l__coffin_scaled_total_height_dim=\dimen163
+\l__coffin_scaled_width_dim=\dimen164
 L3 Module: l3luatex 2016/08/18 v6679 L3 Experimental LuaTeX-specific functions
 )
 (/usr/local/texlive/2016/texmf-dist/tex/latex/l3kernel/l3pdfmode.def
 File: l3pdfmode.def 2016/08/18 v6679 L3 Experimental driver: PDF mode
-\l__driver_color_stack_int=\count132
+\l__driver_color_stack_int=\count142
 \l__driver_tmp_box=\box45
 ))
 (/usr/local/texlive/2016/texmf-dist/tex/latex/l3packages/l3keys2e/l3keys2e.sty
@@ -651,16 +763,16 @@ Package: l3regex 2016/10/19 v6730 L3 Experimental regular expressions
 (/usr/local/texlive/2016/texmf-dist/tex/latex/l3experimental/l3str/l3tl-build.s
 ty
 Package: l3tl-build 2016/10/19 v6730 L3 Experimental token list construction
-\l__tl_build_start_index_int=\count133
-\l__tl_build_index_int=\count134
+\l__tl_build_start_index_int=\count143
+\l__tl_build_index_int=\count144
 )
 (/usr/local/texlive/2016/texmf-dist/tex/latex/l3experimental/l3str/l3tl-analysi
 s.sty
 Package: l3tl-analysis 2016/06/13 v6589 L3 Experimental token lists analysis
-\l__tl_analysis_normal_int=\count135
-\l__tl_analysis_index_int=\count136
-\l__tl_analysis_nesting_int=\count137
-\l__tl_analysis_type_int=\count138
+\l__tl_analysis_normal_int=\count145
+\l__tl_analysis_index_int=\count146
+\l__tl_analysis_nesting_int=\count147
+\l__tl_analysis_type_int=\count148
 )
 (/usr/local/texlive/2016/texmf-dist/tex/latex/l3experimental/l3str/l3flag.sty
 Package: l3flag 2016/10/19 v6730 L3 Experimental flags
@@ -669,72 +781,72 @@ Package: l3flag 2016/10/19 v6730 L3 Experimental flags
 t.sty
 Package: l3str-convert 2016/09/07 v6699 L3 Experimental string encoding convers
 ions
-\l__str_internal_int=\count139
-\c__str_replacement_char_int=\count140
+\l__str_internal_int=\count149
+\c__str_replacement_char_int=\count150
 )
-\l__regex_internal_a_int=\count141
-\l__regex_internal_b_int=\count142
-\l__regex_internal_c_int=\count143
-\l__regex_balance_int=\count144
-\l__regex_group_level_int=\count145
-\l__regex_mode_int=\count146
-\l__regex_catcodes_int=\count147
-\l__regex_default_catcodes_int=\count148
-\c__regex_catcode_D_int=\count149
-\c__regex_catcode_S_int=\count150
-\c__regex_catcode_L_int=\count151
-\c__regex_catcode_O_int=\count152
-\c__regex_catcode_A_int=\count153
-\c__regex_all_catcodes_int=\count154
-\l__regex_show_lines_int=\count155
-\l__regex_min_state_int=\count156
-\l__regex_max_state_int=\count157
-\l__regex_left_state_int=\count158
-\l__regex_right_state_int=\count159
-\l__regex_capturing_group_int=\count160
-\l__regex_min_pos_int=\count161
-\l__regex_max_pos_int=\count162
-\l__regex_current_pos_int=\count163
-\l__regex_start_pos_int=\count164
-\l__regex_success_pos_int=\count165
-\l__regex_current_char_int=\count166
-\l__regex_current_catcode_int=\count167
-\l__regex_last_char_int=\count168
-\l__regex_case_changed_char_int=\count169
-\l__regex_current_state_int=\count170
-\l__regex_step_int=\count171
-\l__regex_min_active_int=\count172
-\l__regex_max_active_int=\count173
-\l__regex_replacement_csnames_int=\count174
-\l__regex_match_count_int=\count175
-\l__regex_submatch_int=\count176
-\l__regex_zeroth_submatch_int=\count177
+\l__regex_internal_a_int=\count151
+\l__regex_internal_b_int=\count152
+\l__regex_internal_c_int=\count153
+\l__regex_balance_int=\count154
+\l__regex_group_level_int=\count155
+\l__regex_mode_int=\count156
+\l__regex_catcodes_int=\count157
+\l__regex_default_catcodes_int=\count158
+\c__regex_catcode_D_int=\count159
+\c__regex_catcode_S_int=\count160
+\c__regex_catcode_L_int=\count161
+\c__regex_catcode_O_int=\count162
+\c__regex_catcode_A_int=\count163
+\c__regex_all_catcodes_int=\count164
+\l__regex_show_lines_int=\count165
+\l__regex_min_state_int=\count166
+\l__regex_max_state_int=\count167
+\l__regex_left_state_int=\count168
+\l__regex_right_state_int=\count169
+\l__regex_capturing_group_int=\count170
+\l__regex_min_pos_int=\count171
+\l__regex_max_pos_int=\count172
+\l__regex_current_pos_int=\count173
+\l__regex_start_pos_int=\count174
+\l__regex_success_pos_int=\count175
+\l__regex_current_char_int=\count176
+\l__regex_current_catcode_int=\count177
+\l__regex_last_char_int=\count178
+\l__regex_case_changed_char_int=\count179
+\l__regex_current_state_int=\count180
+\l__regex_step_int=\count181
+\l__regex_min_active_int=\count182
+\l__regex_max_active_int=\count183
+\l__regex_replacement_csnames_int=\count184
+\l__regex_match_count_int=\count185
+\l__regex_submatch_int=\count186
+\l__regex_zeroth_submatch_int=\count187
 ) (/usr/local/texlive/2016/texmf-dist/tex/latex/tools/calc.sty
 Package: calc 2014/10/28 v4.3 Infix arithmetic (KKT,FJ)
-\calc@Acount=\count178
-\calc@Bcount=\count179
-\calc@Adimen=\dimen161
-\calc@Bdimen=\dimen162
-\calc@Askip=\skip58
-\calc@Bskip=\skip59
+\calc@Acount=\count188
+\calc@Bcount=\count189
+\calc@Adimen=\dimen165
+\calc@Bdimen=\dimen166
+\calc@Askip=\skip59
+\calc@Bskip=\skip60
 LaTeX Info: Redefining \setlength on input line 80.
 LaTeX Info: Redefining \addtolength on input line 81.
-\calc@Ccount=\count180
-\calc@Cskip=\skip60
+\calc@Ccount=\count190
+\calc@Cskip=\skip61
 )
 (/usr/local/texlive/2016/texmf-dist/tex/latex/chemgreek/chemgreek.sty
 (/usr/local/texlive/2016/texmf-dist/tex/latex/l3packages/xparse/xparse.sty
 Package: xparse 2016/10/19 v6730 L3 Experimental document command parser
-\l__xparse_current_arg_int=\count181
-\l__xparse_m_args_int=\count182
-\l__xparse_mandatory_args_int=\count183
-\l__xparse_processor_int=\count184
-\l__xparse_v_nesting_int=\count185
+\l__xparse_current_arg_int=\count191
+\l__xparse_m_args_int=\count192
+\l__xparse_mandatory_args_int=\count193
+\l__xparse_processor_int=\count194
+\l__xparse_v_nesting_int=\count195
 )
 Package: chemgreek 2016/02/10 v1.0e interfaceforuprightgreeklettersforuseinchem
 istry (CN)
-\l__chemgreek_tmpa_int=\count186
-\g__chemgreek_tmpa_int=\count187
+\l__chemgreek_tmpa_int=\count196
+\g__chemgreek_tmpa_int=\count197
 .................................................
 . LaTeX info: "xparse/define-command"
 . 
@@ -786,45 +898,47 @@ istry (CN)
 . Defining command \selectchemgreekmapping with sig. 'm' on line 491.
 .................................................
 )
-\l__mhchem_ce_distanceFromLastComma_int=\count188
-\__mhchem_arrow_extPgfLength_skip=\skip61
-\mhchem@minispace@tmp=\skip62
-\mhchem@minibackspace@tmp=\skip63
-\mhchem@bondwidth=\skip64
-\mhchem@bondheight=\skip65
-\mhchem@smallbondwidth@tmpA=\skip66
-\mhchem@smallbondwidth@tmpB=\skip67
-\mhchem@smallbondwidth=\skip68
-\mhchem@bondtmp@minussidebearingleft=\skip69
-\mhchem@bondtmp@minussidebearingright=\skip70
-\l__mhchem_option_version_int=\count189
-\mhchem@option@minusmathsidebearingleft=\dimen163
-\mhchem@option@minusmathsidebearingright=\dimen164
-\mhchem@option@minustextsidebearingleft=\dimen165
-\mhchem@option@minustextsidebearingright=\dimen166
+\l__mhchem_ce_distanceFromLastComma_int=\count198
+\__mhchem_arrow_extPgfLength_skip=\skip62
+\mhchem@minispace@tmp=\skip63
+\mhchem@minibackspace@tmp=\skip64
+\mhchem@bondwidth=\skip65
+\mhchem@bondheight=\skip66
+\mhchem@smallbondwidth@tmpA=\skip67
+\mhchem@smallbondwidth@tmpB=\skip68
+\mhchem@smallbondwidth=\skip69
+\mhchem@bondtmp@minussidebearingleft=\skip70
+\mhchem@bondtmp@minussidebearingright=\skip71
+\l__mhchem_option_version_int=\count199
+\mhchem@option@minusmathsidebearingleft=\dimen167
+\mhchem@option@minusmathsidebearingright=\dimen168
+\mhchem@option@minustextsidebearingleft=\dimen169
+\mhchem@option@minustextsidebearingright=\dimen170
 )
 (./informeFinal.aux)
 \openout1 = `informeFinal.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 52.
-LaTeX Font Info:    ... okay on input line 52.
-LaTeX Font Info:    Checking defaults for T3/cmr/m/n on input line 52.
-LaTeX Font Info:    Try loading font information for T3+cmr on input line 52.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 53.
+LaTeX Font Info:    ... okay on input line 53.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 53.
+LaTeX Font Info:    ... okay on input line 53.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 53.
+LaTeX Font Info:    ... okay on input line 53.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 53.
+LaTeX Font Info:    ... okay on input line 53.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 53.
+LaTeX Font Info:    ... okay on input line 53.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 53.
+LaTeX Font Info:    ... okay on input line 53.
+LaTeX Font Info:    Checking defaults for T3/cmr/m/n on input line 53.
+LaTeX Font Info:    Try loading font information for T3+cmr on input line 53.
 
 (/usr/local/texlive/2016/texmf-dist/tex/latex/tipa/t3cmr.fd
 File: t3cmr.fd 2001/12/31 TIPA font definitions
 )
-LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    ... okay on input line 53.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 53.
+LaTeX Font Info:    ... okay on input line 53.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -860,55 +974,26 @@ LaTeX Font Info:    ... okay on input line 52.
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-\c@lstlisting=\count190
+\c@lstlisting=\count266
 (/usr/local/texlive/2016/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count191
-\scratchdimen=\dimen167
+\scratchcounter=\count267
+\scratchdimen=\dimen171
 \scratchbox=\box46
-\nofMPsegments=\count192
-\nofMParguments=\count193
+\nofMPsegments=\count268
+\nofMParguments=\count269
 \everyMPshowfont=\toks24
-\MPscratchCnt=\count194
-\MPscratchDim=\dimen168
-\MPnumerator=\count195
-\makeMPintoPDFobject=\count196
+\MPscratchCnt=\count270
+\MPscratchDim=\dimen172
+\MPnumerator=\count271
+\makeMPintoPDFobject=\count272
 \everyMPtoPDFconversion=\toks25
-) (/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/pdftexcmds.sty
-Package: pdftexcmds 2016/05/21 v0.22 Utility functions of pdfTeX for LuaTeX (HO
-)
-
-(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/ifluatex.sty
-Package: ifluatex 2016/05/16 v1.4 Provides the ifluatex switch (HO)
-Package ifluatex Info: LuaTeX not detected.
-)
-Package pdftexcmds Info: LuaTeX not detected.
-Package pdftexcmds Info: \pdf@primitive is available.
-Package pdftexcmds Info: \pdf@ifprimitive is available.
-Package pdftexcmds Info: \pdfdraftmode found.
-)
-(/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
+) (/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
 Package: epstopdf-base 2016/05/15 v2.6 Base part for package epstopdf
 
 (/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/grfext.sty
 Package: grfext 2016/05/16 v1.2 Manage graphics extensions (HO)
-
-(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/kvdefinekeys.sty
-Package: kvdefinekeys 2016/05/16 v1.4 Define keys (HO)
-))
-(/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/kvoptions.sty
-Package: kvoptions 2016/05/16 v3.12 Key value format for package options (HO)
-
-(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/kvsetkeys.sty
-Package: kvsetkeys 2016/05/16 v1.17 Key value parser (HO)
-
-(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/etexcmds.sty
-Package: etexcmds 2016/05/16 v1.6 Avoid name clashes with e-TeX commands (HO)
-Package etexcmds Info: Could not find \expanded.
-(etexcmds)             That can mean that you are not using pdfTeX 1.50 or
-(etexcmds)             that some package has redefined \expanded.
-(etexcmds)             In the latter case, load this package earlier.
-)))
+)
 Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 38.
 Package grfext Info: Graphics extension search list:
@@ -920,69 +1005,112 @@ G,.JBIG2,.JB2,.eps]
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
+\AtBeginShipoutBox=\box47
+Package hyperref Info: Link coloring OFF on input line 53.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/hyperref/nameref.sty
+Package: nameref 2016/05/21 v2.44 Cross-referencing by name of section
+
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
+Package: gettitlestring 2016/05/16 v1.5 Cleanup title references (HO)
+)
+\c@section@level=\count273
+)
+LaTeX Info: Redefining \ref on input line 53.
+LaTeX Info: Redefining \pageref on input line 53.
+LaTeX Info: Redefining \nameref on input line 53.
+
+(./informeFinal.out) (./informeFinal.out)
+\@outlinefile=\write3
+\openout3 = `informeFinal.out'.
+
 .................................................
 . chemgreek info: "mapping-activated"
 . 
-. Activating mapping `default' on line 52.
+. Activating mapping `default' on line 53.
 .................................................
-LaTeX Font Info:    Try loading font information for U+msa on input line 57.
+LaTeX Font Info:    Try loading font information for U+msa on input line 59.
 
 (/usr/local/texlive/2016/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 57.
+LaTeX Font Info:    Try loading font information for U+msb on input line 59.
 
 (/usr/local/texlive/2016/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-LaTeX Font Info:    Try loading font information for U+lasy on input line 57.
+LaTeX Font Info:    Try loading font information for U+lasy on input line 59.
 
 (/usr/local/texlive/2016/texmf-dist/tex/latex/base/ulasy.fd
 File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
 )
-<Logo-Unr.jpg, id=1, 92.9874pt x 98.0463pt>
+<Logo-Unr.jpg, id=4, 92.9874pt x 98.0463pt>
 File: Logo-Unr.jpg Graphic file (type jpg)
  <use Logo-Unr.jpg>
-Package pdftex.def Info: Logo-Unr.jpg used on input line 73.
+Package pdftex.def Info: Logo-Unr.jpg used on input line 74.
 (pdftex.def)             Requested size: 139.48074pt x 147.06905pt.
  [1
 
 {/usr/local/texlive/2016/texmf-var/fonts/map/pdftex/updmap/pdftex.map} <./Logo-
 Unr.jpg>]
-LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 98.
+LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 99.
 
-LaTeX Font Info:    No file OMScmtt.fd. on input line 98.
+LaTeX Font Info:    No file OMScmtt.fd. on input line 99.
 
 
 LaTeX Font Warning: Font shape `OMS/cmtt/m/n' undefined
 (Font)              using `OMS/cmsy/m/n' instead
-(Font)              for symbol `textbraceleft' on input line 98.
+(Font)              for symbol `textbraceleft' on input line 99.
 
-[1] (./informeFinal.aux)
+LaTeX Font Info:    Try loading font information for OML+cmtt on input line 105
+.
+LaTeX Font Info:    No file OMLcmtt.fd. on input line 105.
+
+LaTeX Font Warning: Font shape `OML/cmtt/m/n' undefined
+(Font)              using `OML/cmm/m/it' instead
+(Font)              for symbol `textgreater' on input line 105.
+
+
+Overfull \hbox (6.30333pt too wide) in paragraph at lines 112--113
+[]\OT1/cmr/m/n/10 Si ten-emos dos servi-dores en la misma PC, basta conec-tar a
+m-bos servi-dores con la fun-cion \OT1/cmtt/m/n/10 net[]-kernel:connect[]-
+ []
+
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 116.
+[1]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 116.
+ (./informeFinal.aux)
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 116.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 116.
+Package rerunfilecheck Info: File `informeFinal.out' has not changed.
+(rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
+
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 116.
  ) 
 Here is how much of TeX's memory you used:
- 14617 strings out of 493013
- 261038 string characters out of 6133327
- 315742 words of memory out of 5000000
- 18001 multiletter control sequences out of 15000+600000
+ 18068 strings out of 493013
+ 314081 string characters out of 6133327
+ 396173 words of memory out of 5000000
+ 21421 multiletter control sequences out of 15000+600000
  14381 words of font info for 59 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 40i,7n,32p,10354b,356s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 34i,7n,32p,10354b,356s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
 ></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb
-></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><
-/usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></u
-sr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></us
-r/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr
-/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/
-local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb>
-Output written on informeFinal.pdf (2 pages, 160844 bytes).
+></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb>
+</usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></
+usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></us
+r/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr
+/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/
+local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/l
+ocal/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb>
+Output written on informeFinal.pdf (2 pages, 172538 bytes).
 PDF statistics:
- 44 PDF objects out of 1000 (max. 8388607)
- 30 compressed objects within 1 object stream
- 0 named destinations out of 1000 (max. 500000)
+ 58 PDF objects out of 1000 (max. 8388607)
+ 43 compressed objects within 1 object stream
+ 6 named destinations out of 1000 (max. 500000)
  6 words of extra memory for PDF output out of 10000 (max. 10000000)
 

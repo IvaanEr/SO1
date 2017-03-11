@@ -88,10 +88,7 @@ check(L,T,S) ->
 	L2 = lists:nth(2,L),
 	L3 = lists:nth(3,L),
 	P = ((find(L1,T) == S) and (find(L2,T) == S)) and (find(L3,T) == S),
-	%io:format(find(L1,T)++find(L2,T)++find(L3,T)++S++"P: ~p \n---------\n",[P]),
-	% io:format("Check: ~p~n",[P]),
 	P.
-
 
 send_msj_obs(L,Data) ->
 	lists:foreach(fun (X) -> global:send(X,{print,Data}) end ,L).
@@ -112,15 +109,7 @@ send_msj_j2(Jugadores,Data) ->
 						 global:send(J2,{print,Data})
 	end.
 
-% send_msj_n(N,Jugadores,Data) ->
-% 	J1 = element(2,lists:nth(1,Jugadores)),
-% 	J2 = element(2,lists:nth(2,Jugadores)),
-% 	if J1 == N ->
-% 		global:send(N,Data);
-% 		 J2 == N -> 
-% 		global:send(N,Data)
-% 	end.
-	
+
 ganoJ1(Jugadores,Observadores) ->
 	send_msj_j1(Jugadores,"Ganaste!\n"),
 	send_msj_j2(Jugadores,"Perdiste.\n"),
@@ -169,7 +158,6 @@ es_turno(Turno,Jugadores) ->
 		 					end
 	end.
 	
-
 empate(T) ->
 	A =  (find(1,T) /= " "),
 	B =	 (find(2,T) /= " "),

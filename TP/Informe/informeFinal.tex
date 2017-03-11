@@ -9,6 +9,7 @@
 \usepackage{listings}
 \usepackage{graphicx}
 \usepackage{setspace}
+\usepackage{hyperref}
 \usepackage[version=4]{mhchem}
 
 \newcommand{\dbquote}[1]{\textquotedblleft#1\textquotedblright}
@@ -93,13 +94,23 @@ El trabajo práctico consta de dos archivos que permiten su funcionamiento:
 
 \subsection*{Conceptos de diseño}
 \begin{itemize}
-  \blacktr Al iniciar un servidor, se le debe pasar como parametros un nombre para el nodo, el puerto donde va a recibir conexiones entrantes y una lista con los nombres de los demas nodos del sistema, si los hubiera. Crea un nuevo proceso donde se llevara una lista con los nombres de los clientes de todo el sistema distribuido llamado \texttt{list_of_client}, que se registra globalmente con el nombre de \texttt{clients_pid} para poder acceder a este proceso desde cualquier nodo. Se realiza lo mismo, para un proceso registrado globalmente como \texttt{games_pid} para llevar los nombres de las partidas en curso. Además tanto los clientes como las partidas en curso han sido registradas globalmente. Tambien, se da inicio y registro local a los procesos de \texttt{pbalance} y \texttt{pstat}. Luego de iniciar estos procesos claves para el almacenamiento de informacion y funcionamiento del sistema se pasa a la funcion \texttt{dispatcher} con el Socket donde el nodo recibe conexiones entrantes.
+  \blacktr Al iniciar un servidor, se crea un nuevo proceso donde se llevara una lista con los nombres de los clientes de todo el sistema distribuido llamado \texttt{list_of_client}, que se registra globalmente con el nombre de \texttt{clients_pid} para poder acceder a este proceso desde cualquier nodo. Se realiza lo mismo, para un proceso registrado globalmente como \texttt{games_pid} para llevar los nombres de las partidas en curso. Además tanto los clientes como las partidas en curso han sido registradas globalmente. Tambien, se da inicio y registro local a los procesos de \texttt{pbalance} y \texttt{pstat}. Luego de iniciar estos procesos claves para el almacenamiento de informacion y funcionamiento del sistema se pasa a la funcion \texttt{dispatcher} con el Socket donde el nodo recibe conexiones entrantes.
   \blacktr Con respecto al balanceo, la función \texttt{pstat} se encarga de enviarle a la funcion \texttt{pbalance} de todos los nodos el estado de carga de él mismo. Luego, \texttt{pbalance} recibe el estado de carga de todos los nodos y se queda con el nodo de menor carga, asi cuando un proceso desea saber que nodo es el de menor carga, \texttt{pbalance} le envia este nodo.
   \blacktr Un juego consta de sus jugadores, observadores, el tablero de juego, y de quien es el turno actual. Los jugadores dentro de un juego estan almacenados de la forma \texttt{\{N,Jugador\}}, donde \texttt{N} es un 1 o un 2 correspondiente al turno y \texttt{Jugador} es el nombre registrado globalmente (un atomo). Por diseño, el usuario que crea el juego con el comando \texttt{NEW} va a ser el jugador numero 1 y esté obtendra el primer turno.
   \blacktr Cuando se realiza un cambio en un juego, el servidor envia automaticamente a cada jugador y observador de ese juego el nuevo tablero indicando quien fue el jugador que realizó esa jugada. Se obvio el comando \texttt{UPD} por esto, ya que esta alternativa parece mas clara y eficiente para los usuarios. 
-
-
-
 \end{itemize}
+
+\subsection*{Inicializar el sistema}
+\begin{itemize}
+    \blacktr Antes de inicializar la consola de Erlang, ejecutamos el comando \texttt{\textdollar epmd -daemon} por si el comando \texttt{\textdollar erl} arranca automaticamente el epmd (Erlang  Port  Mapper  Daemonepmd). Luego abrimos la terminal de Erlang con \texttt{\textdollar erl} y compilamos el servidor con \texttt{1\textgreater c(server).} El servidor se arranca con la funcion \texttt{start\textbackslash2} del modulo \texttt{server}. Está funcion toma como parametros un nombre para el nodo y un puerto. 
+
+    \blacktr Si se quiere conectar otro servidor que este en otra PC al sistema distribuido se debe:
+      Conectar al server TCP mediante \texttt{gen_tcp:connect(Address,Port,[Options])}, donde \texttt{Address} es la direccion IP donde se encuentra el otro servidor, \texttt{Port} es el puerto con el que se inicio el servidor y \texttt{[Options]} puede ser la lista vacia. Si se requiere algun tipo especial de conexion ver las opciones aqui: \url{http://erlang.org/doc/man/gen_tcp.html#connect-3}.
+
+      Luego, se deben sincronizar ambos nodos (al sincrnoziar un nodo con otro que ya esta sincronizado con otros, automaticamente se sincroniza con todos los demas) con \texttt{net_kernel:connect_node(Node)}, donde \texttt{Node} es el nombre que se le dio al nodo. Si se quiere saber el nombre de un nodo se puede utilizar la funcion \texttt{node()}. Además, luego de la sincronizacion, se puede saber con que nodos estoy conectado con \texttt{nodes()}.
+
+    \blacktr Si tenemos dos servidores en la misma PC, basta conectar ambos servidores con la funcion \texttt{net_kernel:connect_node(Node)}.
+\end{itemize}
+
 
 \end{document}
