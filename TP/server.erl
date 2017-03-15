@@ -41,7 +41,7 @@ server(Port) ->
 
 %% Espera nuevas conexiones y crea un proceso para atender cada una.
 dispatcher(LSock) ->
-	{ok, CSock} = gen_tcp:accept(LSock),
+	  {ok, CSock} = gen_tcp:accept(LSock),
 		Pid = spawn(?MODULE, psocket, [CSock]),
 		ok = gen_tcp:controlling_process(CSock, Pid), %%Ahora a CSock lo controla Pid -- los mensajes a CSock llegan a Pid
 		Pid ! ok,
@@ -56,24 +56,25 @@ psocket(CSock) ->
 
 %%Primer PSocket: Solo para registrarse.
 psocket_loop(CSock) ->
-	pbalance ! {req,self()},
-	receive	
-		{send,Nodo} ->	receive
-											{tcp,CSock,Data} ->
-												case string:tokens(lists:sublist(Data, length(Data)-2)," ") of
-													["CON",Nombre] -> 
-																spawn(Nodo,?MODULE,connect,[Nombre,CSock,self()]),
-																receive {con,N} -> io:format("registro exitoso~n"),psocket_loop(CSock,N);
-																				{error} -> psocket_loop(CSock)
-																end;
-													["BYE"] -> gen_tcp:close(CSock),exit(normal);
-													Otherwise -> gen_tcp:send(CSock,"Primero debes registrarte con CON 'id'.\n"),
-																 io:format("Pid: ~p quiere ejecutar comandos sin registrarse~n",[self()]),
-																 psocket_loop(CSock)
-												end;
-											{error,Closed} -> io:format("Closed:~p~n",[Closed]),exit(normal) %%hace falta volver a llamar a psocketloop?
-										end
+	receive
+		{tcp,CSock,Data} ->
+			pbalance ! {req,self()},
+			receive {send,Nodo} ->
+				case string:tokens(lists:sublist(Data, length(Data)-2)," ") of
+					["CON",Nombre] -> 
+								spawn(Nodo,?MODULE,connect,[Nombre,CSock,self()]),
+								receive {con,N} -> io:format("registro exitoso~n"),psocket_loop(CSock,N);
+												{error} -> psocket_loop(CSock)
+								end;
+					["BYE"] -> gen_tcp:close(CSock),exit(normal);
+					Otherwise -> gen_tcp:send(CSock,"Primero debes registrarte con CON 'id'.\n"),
+								 io:format("Pid: ~p quiere ejecutar comandos sin registrarse~n",[self()]),
+								 psocket_loop(CSock)
+				end
+			end;
+		{error,Closed} -> io:format("Closed:~p~n",[Closed]),exit(normal) %%hace falta volver a llamar a psocketloop?
 	end.
+
 
 %%Segundo PSocket: Una vez registrado N tiene acceso a los demas comandos.
 psocket_loop(CSock,N) ->
@@ -227,8 +228,7 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
 															 	true -> game:ganoJ1(Jugadores,Observadores),global:send(games_pid,{elim,J}),exit(normal);
 															 	false -> case game:gano(TNew,"0") of
 															 						true -> game:ganoJ2(Jugadores,Observadores),global:send(games_pid,{elim,J}),exit(normal);
-															 						false -> %io:format("Empate: ~p~n",[game:empate(TNew)]),
-															 										 case game:empate(TNew) of
+															 						false -> case game:empate(TNew) of
 															 											true -> lists:foreach(fun(X)->global:send(element(2,X),{print,"Han empatado.\n"}) end,Jugadores),
 															 															lists:foreach(fun(X)->global:send(X,{print,"Han empatado.\n"}) end,Observadores),
 															 															global:send(games_pid,{elim,J}),exit(normal);
@@ -238,8 +238,7 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
 															 					 					 end
 															 					 end
 															 end; 
-		{start} ->%io:format("El jugador es: ~p~n",[es_turno(Turno,Jugadores)]),
-							X = game:es_turno(Turno,Jugadores),
+		{start} ->X = game:es_turno(Turno,Jugadores),
 							global:send(X,{print,"-- Es tu turno "++atom_to_list(X)++" --\n"}),
 							Aux = "+ "++atom_to_list(J)++" | "++atom_to_list(element(2,lists:nth(1,Jugadores)))++" (X) | "++atom_to_list(element(2,lists:nth(2,Jugadores)))++" (0) +\n\n",
 							lists:foreach(fun(Y) -> global:send(element(2,Y),{print,Aux}),global:send(element(2,Y),{print,game:tprint(Tablero)}) end,Jugadores),
@@ -367,22 +366,22 @@ bye(N) ->
 								 receive
 								 	{send,Jugadores,Observadores} ->
 								 		J1 = element(2,lists:nth(1,Jugadores)),
-								 		if (length(Jugadores) == 1) and (J1 == N)-> %%todavia no hay J2
-								 			global:send(X,bye); %global:send(J1,{error,normal});
+								 		if (length(Jugadores) == 1) and (J1 == N)-> 
+								 			global:send(X,bye);
 								 			true -> 
 										 		J2 = element(2,lists:nth(2,Jugadores)),
 										 		case J1 == N of
 										 			 true -> 
 									 			 		 global:send(J2,{print,atom_to_list(J1)++" ha abandonado.\n"}),
 									 			 		 lists:foreach( fun (X) -> global:send(X,{print,atom_to_list(J1)++" ha abandonado.\n"}) end,Observadores),
-									 			 		 global:send(X,bye); %global:send(J1,{error,normal});
+									 			 		 global:send(X,bye); 
 										 			 false -> case J2 == N of
 													 			 			true ->
 													 			 				global:send(J1,{print,atom_to_list(J2)++" ha abandonado.\n"}),
 								 						 			 		  lists:foreach( fun (X) -> global:send(X,{print,atom_to_list(J2)++" ha abandonado.\n"}) end,Observadores),
-								 						 			 		  global:send(X,bye); %global:send(J2,{error,normal});
+								 						 			 		  global:send(X,bye); 
 								 						 			 		false -> 
-								 						 			 			ok %io:format("ERROR BYE\n")	
+								 						 			 			ok 	
 								 						 			 	end
 								 				end
 								 		end
