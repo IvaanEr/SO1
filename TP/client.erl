@@ -5,7 +5,9 @@
 
 client(Ip,Port) ->
 	{ok,CSock} = gen_tcp:connect(Ip,Port,[{packet,0},{active,false}]),
-	CSock.
+	io:format("Bienvenido!~n"),
+	spawn(?MODULE,salida,[CSock]),
+	entrada(CSock).
 
 cmd(CMD,CSock) ->
 	case gen_tcp:send(CSock,CMD) of
@@ -13,3 +15,15 @@ cmd(CMD,CSock) ->
 					io:format("~p~n",[Packet]);
 		{error,Reason} -> io:format("error: ~p~n",[Reason])
 	end.
+
+
+salida(CSock) ->
+	Cmd = io:get_line("-> "),
+	gen_tcp:send(CSock,Cmd).
+
+
+entrada(CSock) ->
+	case gen_tcp:recv(CSock,0) of
+		{ok,Packet} -> io:format("Paquete: ~p~n",[Packet])
+	end,
+	entrada(CSock).

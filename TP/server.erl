@@ -51,7 +51,7 @@ dispatcher(LSock) ->
 psocket(CSock) ->
 	receive ok -> ok end, %%magia para que controlling process suceda antes que setopts.
 	ok = inet:setopts(CSock	,[{active,true}]), %%recivo msjs con receive, no con gen_tcp:recv.	
-	gen_tcp:send(CSock,"Bienvenido!\nRecuerda que primero debes registrarte con CON. -|- HELP para ayuda.\n\n"),
+	gen_tcp:send(CSock,"Bienvenido!~nRecuerda que primero debes registrarte con CON. -|- HELP para ayuda.~n~n"),
 	psocket_loop(CSock).
 
 %%Primer PSocket: Solo para registrarse.
