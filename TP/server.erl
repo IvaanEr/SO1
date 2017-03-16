@@ -33,7 +33,7 @@ server(Port) ->
 	yes = global:register_name(clients_pid,ClientPid,Resolve),
 	GamesPid = spawn(?MODULE,lists_of_games,[[]]), %%crea el proceso que maneja la lista de juegos en curso.
 	yes = global:register_name(games_pid,GamesPid,Resolve),
-	PidBalance = spawn(?MODULE,pbalance,[statistics(total_active_tasks),node()]),
+	PidBalance = spawn(?MODULE,pbalance,[1,node()]), %%statistics(total_active_tasks)
 	register(pbalance,PidBalance),
 	PidStat = spawn(?MODULE,pstat,[]),
 	register(pstat,PidStat),
@@ -106,7 +106,7 @@ pcommand(Data,CSock,N) ->
 
 %Encargado de mandar la info de carga al resto de los nodos
 pstat() -> 
-	Carga = statistics(total_active_tasks),
+	Carga = 1, %statistics(total_active_tasks),
 
 	{pbalance,node()} ! {st,Carga,node()},
 	lists:foreach(fun (X) -> {pbalance,X}!{st,Carga,X} end,nodes()),

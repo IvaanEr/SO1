@@ -45,9 +45,9 @@ entrada(CSock,P) ->
 
 				["ErPlaInex"]    -> io:format("Juego inexistente.~n");
 				["ErPlaCas"]     -> io:format("Casilla incorrecta.~n");
-				["ErPlaJug"]     -> io:foramt("Aun falta un jugador.~n")
+				["ErPlaJug"]     -> io:foramt("Aun falta un jugador.~n");
 
-				_Else -> io:format(Packet)
+				_Else            -> io:format(Packet)
 			end
 
 

@@ -13,8 +13,13 @@
 %Comienza el sistema distribuido, con hacer ping a un solo nodo basta.
 %Ya que se sincroniza con todo el sistema.
 
-start(SName,Port) ->
+start(SName,Port,LServer) ->
 	net_kernel:start([SName,shortnames]),
+	case length(LServer) > 0 of
+	    true -> S = hd(LServer),
+	            net_adm:ping(S);
+	    false -> ok
+	end,
 	spawn(?MODULE,server,[Port]).
 
 %% para conectar dos servers en distintas PC's:
@@ -33,16 +38,22 @@ server(Port) ->
 	yes = global:register_name(clients_pid,ClientPid,Resolve),
 	GamesPid = spawn(?MODULE,lists_of_games,[[]]), %%crea el proceso que maneja la lista de juegos en curso.
 	yes = global:register_name(games_pid,GamesPid,Resolve),
-	PidBalance = spawn(?MODULE,pbalance,[statistics(total_active_tasks),node()]),
+	PidBalance = spawn(?MODULE,pbalance,[]), 
 	register(pbalance,PidBalance),
 	PidStat = spawn(?MODULE,pstat,[]),
 	register(pstat,PidStat),
+	PidCargas = spawn(?MODULE,cargas,[dict:new()]), %% Diccionario para llevar la carga de los nodos.
+	yes = global:register_name(cargas,PidCargas,Resolve),
+	global:send(cargas,{newNode,node()}),
 	dispatcher(LSock). %%llamo a dispatcher con el listen socket
 
 %% Espera nuevas conexiones y crea un proceso para atender cada una.
 dispatcher(LSock) ->
 	  {ok, CSock} = gen_tcp:accept(LSock),
-		Pid = spawn(?MODULE, psocket, [CSock]),
+	  {pbalance,node()} ! {req,self()},
+	  receive {send,Nodo} ->
+		Pid = spawn(Nodo,?MODULE, psocket, [CSock])
+		end,
 		ok = gen_tcp:controlling_process(CSock, Pid), %%Ahora a CSock lo controla Pid -- los mensajes a CSock llegan a Pid
 		Pid ! ok,
 		dispatcher(LSock).
@@ -58,7 +69,8 @@ psocket(CSock) ->
 psocket_loop(CSock) ->
 	receive
 		{tcp,CSock,Data} ->
-			pbalance ! {req,self()},
+		  io:format("DATA: ~p~n",[Data]),
+			{pbalance,node()} ! {req,self()},
 			receive {send,Nodo} ->
 				case string:tokens(lists:sublist(Data, length(Data)-1)," ") of
 					["CON",Nombre] -> 
@@ -71,29 +83,29 @@ psocket_loop(CSock) ->
 								 io:format("Pid: ~p quiere ejecutar comandos sin registrarse~n",[self()]),
 								 psocket_loop(CSock)
 				end
-			end;
+		  end;
 		{error,Closed} -> io:format("Closed:~p~n",[Closed]),exit(normal) %%hace falta volver a llamar a psocketloop?
 	end.
 
 
 %%Segundo PSocket: Una vez registrado N tiene acceso a los demas comandos.
 psocket_loop(CSock,N) ->
-	{pbalance,node()} ! {req,self()},
-	receive
-		{send,Nodo} ->	receive 
-											{tcp,CSock,Data} ->
-												spawn(Nodo,?MODULE, pcommand, [Data,CSock,N]),
-												psocket_loop(CSock,N);
-											empate -> gen_tcp:send(CSock,"Han empatado. Al menos no perdiste!~n");
-											er_juego_inex -> gen_tcp:send(CSock,"ErPlaInex");
-											er_pla_casilla -> gen_tcp:send(CSock,"ErPlaCas");
-											er_pla_jug    -> gen_tcp:send(CSock"ErPlaJug");
-											{print,Data} -> gen_tcp:send(CSock,Data),psocket_loop(CSock,N);
-											{error,Closed} -> io:format("Closed:~p~n",[Closed]),gen_tcp:close(CSock),exit(normal)
+receive 
+	{tcp,CSock,Data} ->
+	  	{pbalance,node()} ! {req,self()},
+	    receive
+		    {send,Nodo} ->	
+          spawn(Nodo,?MODULE, pcommand, [Data,CSock,N]),
+          psocket_loop(CSock,N);
+          empate -> gen_tcp:send(CSock,"Han empatado. Al menos no perdiste!~n");
+          er_juego_inex -> gen_tcp:send(CSock,"ErPlaInex");
+          er_pla_casilla -> gen_tcp:send(CSock,"ErPlaCas");
+          er_pla_jug    -> gen_tcp:send(CSock,"ErPlaJug");
+          {print,Data} -> gen_tcp:send(CSock,Data),psocket_loop(CSock,N);
+          {error,Closed} -> io:format("Closed:~p~n",[Closed]),gen_tcp:close(CSock),exit(normal)
 
-						 				end
-		
-	end.	
+      end
+end.	
 
 pcommand(Data,CSock,N) ->
 	case string:tokens(lists:sublist(Data, length(Data)-1)," ") of
@@ -111,24 +123,39 @@ pcommand(Data,CSock,N) ->
 
 %Encargado de mandar la info de carga al resto de los nodos
 pstat() -> 
-	Carga = statistics(total_active_tasks),
-
-	{pbalance,node()} ! {st,Carga,node()},
-	lists:foreach(fun (X) -> {pbalance,X}!{st,Carga,X} end,nodes()),
-
+	Carga = 1,%statistics(total_active_tasks),
+  global:send(cargas,{update,node(),Carga}),
+	%%{pbalance,node()} ! {st,Carga,node()},
+	%%lists:foreach(fun (X) -> {pbalance,X}!{st,Carga,X} end,nodes()),
 	receive after 20000 -> ok end,
 	pstat().
 
 %Recibe lo de pstat y calcula en que nodo se debe ejecutar.
-pbalance(Carga,Nodo) -> 
+pbalance() -> 
 	receive
-		{st,C,N} -> case Carga > C of
-						true -> pbalance(C,N);
-						false -> pbalance(Carga,Nodo)
-					end;
-		{req,Pid} -> Pid!{send,Nodo}, pbalance(Carga,Nodo) 
-	end.
+ 		{req,Pid} -> global:send(cargas,{req,self()}),
+ 		             receive 
+ 		              {send,Node} -> Pid!{send,Node}
+ 		             end
+ 		             
+	end,
+	pbalance().
 
+%Pid!{send,Nodo}, pbalance(Carga,Nodo)
+cargas(Dict) ->
+  receive
+  {newNode,Node}      -> cargas(dict:store(Node,1,Dict));
+  {update,Node,Carga} -> cargas(dict:store(Node,Carga,Dict)); 
+  {req,Pid}           -> Min = dict:fold(fun(K,V,{S,C})-> if V < C -> {K,V};
+                                                             true -> {S,C} 
+                                                          end
+                                                              end,{node(),dict:fetch(node(),Dict)},Dict),
+                         Pid ! {send,element(1,Min)},
+                         cargas(Dict)
+  end.
+
+  
+  
 %Comando CON. Registra un usuario con Nombre.	
 connect(Nombre, CSock, PSocketPid) ->
 		N = list_to_atom(Nombre),

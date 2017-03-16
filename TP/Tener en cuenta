@@ -14,3 +14,12 @@ Un juego lleva:
 	SOLUCIONADO.
 
 2.- 
+
+
+
+
+####################################3
+
+1> agregar balanceo al spawn de psocket
+2> arreglar balanceo que se haga justo antes de llamar a pcommand
+3> 
