@@ -27,10 +27,11 @@ salida(CSock,Name) ->
 
 entrada(CSock,P) ->
 	case gen_tcp:recv(CSock,0) of
-		{ok,Packet} -> 
+		{ok,Packet} -> io:format("~p~n~n",[Packet]),
 			case string:tokens(Packet," ") of
 				["ErReg"]        -> io:format("Primero debes registrarte. Utilice CON [Id]~n");
-				
+				["Er"]           -> io:format("Comando Incorrecto  ¯\\_(ツ)_/¯ HELP para la ayuda~n"); 
+
 				["OkCon",Nombre] -> io:format("Registro exitoso "++Nombre++"~n"), P!{new,Nombre};
 				["ErCon",Nombre] -> io:format("El nombre "++Nombre++" esta en uso~n");
 				["ErCon2"]       -> io:format("Ya estas registrado.~n");
@@ -45,9 +46,9 @@ entrada(CSock,P) ->
 
 				["ErPlaInex"]    -> io:format("Juego inexistente.~n");
 				["ErPlaCas"]     -> io:format("Casilla incorrecta.~n");
-				["ErPlaJug"]     -> io:foramt("Aun falta un jugador.~n");
+				["ErPlaJug"]     -> io:format("Aun falta un jugador.~n");
 
-				_Else            -> io:format(Packet)
+				Otherwise        -> io:format(Packet)	
 			end
 
 

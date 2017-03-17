@@ -39,9 +39,9 @@ inicializar_tablero() ->
 		T9.
 
 %Cadena para tener el tablero.
-tprint(D) -> A = "%%===========%%\n",
-						 B = "%| "++find(1,D)++" | "++find(2,D)++" | "++find(3,D)++" |%\n%| "++find(4,D)++" | "++find(5,D)++" | "++find(6,D)++" |%\n%| "++find(7,D)++" | "++find(8,D)++" | "++find(9,D)++" |%\n",
-						 A++B++A++"\n\n".
+tprint(D) -> A = "%%===========%%~n",
+						 B = "%| "++find(1,D)++" | "++find(2,D)++" | "++find(3,D)++" |%~n%| "++find(4,D)++" | "++find(5,D)++" | "++find(6,D)++" |%~n%| "++find(7,D)++" | "++find(8,D)++" | "++find(9,D)++" |%~n",
+						 A++B++A++"~n~n".
 
 %% Envia el juego actualizado a los jugadores y a los observadores.
 upd(Juego,Jugadores,Tablero,Observadores,Turno) ->
@@ -50,7 +50,7 @@ upd(Juego,Jugadores,Tablero,Observadores,Turno) ->
 
 %Para imprimir el tablero con su JuegoID|J1|J2.
 presentacion_j(G,J,T,Turno) ->
-	Aux = "+ "++atom_to_list(G)++" | "++atom_to_list(element(2,lists:nth(1,J)))++" (X) | "++atom_to_list(element(2,lists:nth(2,J)))++" (0) +\n\n",
+	Aux = "+ "++atom_to_list(G)++" | "++atom_to_list(element(2,lists:nth(1,J)))++" (X) | "++atom_to_list(element(2,lists:nth(2,J)))++" (0) +~n~n",
 	JAUX = es_turno(Turno,J),
 	% io:format("Pruebaaaa: "++atom_to_list(JAUX)++"~n"),
 	lists:foreach(fun(X) -> global:send(element(2,X),{print,Aux}), global:send(element(2,X),{print,"Turno: "++atom_to_list(JAUX)++"\n"}),global:send(element(2,X),{print,tprint(T)}) end,J).
@@ -70,25 +70,42 @@ update(C,T,Turno) ->
 	dict:store(C,S,T).
 
 %Verifico si  alguien gano.
-gano(T,S) ->
-	Posibles = [[1,2,3],[4,5,6],[7,8,9],[1,4,7],[2,5,8],[3,6,9],[1,5,9],[7,5,3]],
-	P = check(lists:nth(1,Posibles),T,S) or
-			check(lists:nth(2,Posibles),T,S) or
-			check(lists:nth(3,Posibles),T,S) or
-			check(lists:nth(4,Posibles),T,S) or
-			check(lists:nth(5,Posibles),T,S) or
-			check(lists:nth(6,Posibles),T,S) or
-			check(lists:nth(7,Posibles),T,S) or
-			check(lists:nth(8,Posibles),T,S),
-	P.
+gano(T) ->
+	(vertical(T) or horizontal(T)) or diagonal(T).
 
-%Para cada una de las Posibilidades, chequea si es valida para ganar.
-check(L,T,S) ->
-	L1 = lists:nth(1,L),
-	L2 = lists:nth(2,L),
-	L3 = lists:nth(3,L),
-	P = ((find(L1,T) == S) and (find(L2,T) == S)) and (find(L3,T) == S),
-	P.
+vertical(T) ->
+	(((find(1,T) == find(4,T)) and (find(4,T) == find(7,T))) and (find(1,T) /= " ")) or
+	(((find(2,T) == find(5,T)) and (find(5,T) == find(8,T))) and (find(2,T) /= " ")) or
+	(((find(3,T) == find(6,T)) and (find(6,T) == find(9,T))) and (find(3,T) /= " ")).
+
+horizontal(T) ->
+	(((find(1,T) == find(2,T)) and (find(2,T) == find(3,T))) and (find(1,T) /= " ")) or
+	(((find(4,T) == find(5,T)) and (find(5,T) == find(6,T))) and (find(4,T) /= " ")) or
+	(((find(7,T) == find(8,T)) and (find(8,T) == find(9,T))) and (find(7,T) /= " ")).
+
+diagonal(T) ->
+	(((find(1,T) == find(5,T)) and (find(5,T) == find(9,T))) and (find(1,T) /= " ")) or
+	(((find(7,T) == find(5,T)) and (find(5,T) == find(3,T))) and (find(7,T) /= " ")).
+
+% gano(T,S) ->
+% 	Posibles = [[1,2,3],[4,5,6],[7,8,9],[1,4,7],[2,5,8],[3,6,9],[1,5,9],[7,5,3]],
+% 	P = check(lists:nth(1,Posibles),T,S) or
+% 			check(lists:nth(2,Posibles),T,S) or
+% 			check(lists:nth(3,Posibles),T,S) or
+% 			check(lists:nth(4,Posibles),T,S) or
+% 			check(lists:nth(5,Posibles),T,S) or
+% 			check(lists:nth(6,Posibles),T,S) or
+% 			check(lists:nth(7,Posibles),T,S) or
+% 			check(lists:nth(8,Posibles),T,S),
+% 	P.
+
+% %Para cada una de las Posibilidades, chequea si es valida para ganar.
+% check(L,T,S) ->
+% 	L1 = lists:nth(1,L),
+% 	L2 = lists:nth(2,L),
+% 	L3 = lists:nth(3,L),
+% 	P = ((find(L1,T) == S) and (find(L2,T) == S)) and (find(L3,T) == S),
+% 	P.
 
 send_msj_obs(L,Data) ->
 	lists:foreach(fun (X) -> global:send(X,{print,Data}) end ,L).
@@ -111,9 +128,9 @@ send_msj_j2(Jugadores,Data) ->
 
 
 ganoJ1(Jugadores,Observadores) ->
-	send_msj_j1(Jugadores,"Ganaste!\n"),
-	send_msj_j2(Jugadores,"Perdiste.\n"),
-	send_msj_obs(Observadores,"Gano el jugador (X)\n").
+	send_msj_j1(Jugadores,"Ganaste!~n"),
+	send_msj_j2(Jugadores,"Perdiste.~n"),
+	send_msj_obs(Observadores,"Gano el jugador (X)~n").
 	% case element(1,lists:nth(1,Jugadores)) of
 	% 	1 -> J1 = element(2,lists:nth(1,Jugadores)),
 	% 			 J2 = element(2,lists:nth(2,Jugadores)),
@@ -126,9 +143,9 @@ ganoJ1(Jugadores,Observadores) ->
 	% end.
 
 ganoJ2(Jugadores,Observadores) ->
-	send_msj_j2(Jugadores,"¡Ganaste!\n"),
-	send_msj_j1(Jugadores,"Perdiste.\n"),
-	send_msj_obs(Observadores,"Gano el jugador (0)\n").
+	send_msj_j2(Jugadores,"¡Ganaste!~n"),
+	send_msj_j1(Jugadores,"Perdiste.~n"),
+	send_msj_obs(Observadores,"Gano el jugador (0)~n").
 	% case element(1,lists:nth(1,Jugadores)) of
 	% 	1 -> J1 = element(2,lists:nth(1,Jugadores)),
 	% 			 J2 = element(2,lists:nth(2,Jugadores)),

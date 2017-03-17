@@ -102,14 +102,11 @@ El trabajo práctico consta de dos archivos que permiten su funcionamiento:
 
 \subsection*{Inicializar el sistema}
 \begin{itemize}
-    \blacktr Antes de inicializar la consola de Erlang, ejecutamos el comando \texttt{\textdollar epmd -daemon} por si el comando \texttt{\textdollar erl} arranca automaticamente el epmd (Erlang  Port  Mapper  Daemonepmd). Es para evitar el error "register/listen error: econnrefused". Luego abrimos la terminal de Erlang con \texttt{\textdollar erl} y compilamos el servidor con \texttt{1\textgreater c(server).} El servidor se arranca con la función \texttt{start\textbackslash2} del módulo \texttt{server}. Esta función toma como parametros un nombre para el nodo y un puerto. 
+    \blacktr Antes de inicializar la consola de Erlang, ejecutamos el comando \texttt{\textdollar epmd -daemon} por si el comando \texttt{\textdollar erl} arranca automaticamente el epmd (Erlang  Port  Mapper  Daemonepmd). Es para evitar el error "register/listen error: econnrefused".
+    \blacktr Antes de abrir la terminal de Erlang con \texttt{\textdollar erl} debemos conocer la IP del equipo en la red. Una de las formas de obtenerla es con el comando \texttt{\textdollar ipconfig}. Una vez tenemos la IP abrimos la terminal de Erlang de la siguiente manera: \texttt{erl -name nodo@IP}, donde \texttt{nodo} es el nombre que le queremos dar al mismo y \texttt{IP} la que se obtuvo anteriormente.
+    \blacktr Compilamos el servidor con \texttt{1\textgreater c(server).} El servidor se arranca con la función \texttt{start\textbackslash2} del módulo \texttt{server}. Esta función toma como parametros un nombre para el nodo (puede ser el mismo con el que se abrio el shell), un puerto disponible y una lista con el nombre de los demás nodos de la forma \texttt{nodo@IP} que en principio puede ser vacia ya que no hay otros nodos en el sistema. 
 
-    \blacktr Si se quiere conectar otro servidor que esté en otra PC al sistema distribuido se debe:
-      Conectar al server TCP mediante \texttt{gen_tcp:connect(Address,Port,[Options])}, donde \texttt{Address} es la dirección IP donde se encuentra el otro servidor, \texttt{Port} es el puerto con el que se inicializó el servidor y \texttt{[Options]} puede ser la lista vacía. Si se requiere algun tipo especial de conexion ver las opciones \href{http://erlang.org/doc/man/gen_tcp.html#connect-3}{aqui}.
-
-      Luego, se deben sincronizar ambos nodos (al sincrnoziar un nodo con otro que ya está sincronizado con otros, automáticamente se sincroniza con todos los demás) con \texttt{net_kernel:connect_node(Node)}, donde \texttt{Node} es el nombre que se le dio al nodo. Si se quiere saber el nombre de un nodo se puede utilizar la función \texttt{node()}. Además, luego de la sincronización, se puede saber con que nodos estoy conectado con \texttt{nodes()}.
-
-    \blacktr Si tenemos dos servidores en la misma PC, basta conectar ambos servidores con la función \texttt{net_kernel:connect_node(Node)}.
+    \blacktr El sistema deberia sincronizarse automaticamente con los demas nodos de la red (si los hubiera), para chequear esto se puede utilizar la funcion \texttt{nodes()} que nos devuelve una lista de todos los demas nodos del sistema.
 \end{itemize}
 
 \subsection*{Como jugar}
