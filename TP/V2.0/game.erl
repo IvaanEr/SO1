@@ -128,9 +128,10 @@ send_msj_j2(Jugadores,Data) ->
 
 
 ganoJ1(Jugadores,Observadores) ->
+	J1 = atom_to_list(element(2,hd(Jugadores))),
 	send_msj_j1(Jugadores,"Ganaste!~n"),
 	send_msj_j2(Jugadores,"Perdiste.~n"),
-	send_msj_obs(Observadores,"Gano el jugador (X)~n").
+	send_msj_obs(Observadores,"Gano el jugador "++J1++" (X)~n").
 	% case element(1,lists:nth(1,Jugadores)) of
 	% 	1 -> J1 = element(2,lists:nth(1,Jugadores)),
 	% 			 J2 = element(2,lists:nth(2,Jugadores)),
@@ -143,9 +144,10 @@ ganoJ1(Jugadores,Observadores) ->
 	% end.
 
 ganoJ2(Jugadores,Observadores) ->
+	J2 = atom_to_list(element(2,lists:nth(2,Jugadores))),
 	send_msj_j2(Jugadores,"¡Ganaste!~n"),
 	send_msj_j1(Jugadores,"Perdiste.~n"),
-	send_msj_obs(Observadores,"Gano el jugador (0)~n").
+	send_msj_obs(Observadores,"Gano el jugador "++J2++" (0)~n").
 	% case element(1,lists:nth(1,Jugadores)) of
 	% 	1 -> J1 = element(2,lists:nth(1,Jugadores)),
 	% 			 J2 = element(2,lists:nth(2,Jugadores)),

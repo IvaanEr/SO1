@@ -10,6 +10,11 @@
 %         SERVIDOR DE JUEGOS DISTRIBUIDO            %
 %%=================================================%%
 
+%%Observación:
+%%Para acceder al segundo jugador de la lista de jugadores de un juego especifico
+%%se usa lists:nth ya que sino deberia llamar a dos funciones: "tl" que me devuelve
+%%UNA LISTA con el ultimo elemento (ya que solo son 2) y a "hd" para obetener ese elemento
+
 %Comienza el sistema distribuido, con hacer ping a un solo nodo basta.
 %Ya que se sincroniza con todo el sistema.
 
@@ -22,17 +27,8 @@ start(SName,Port,LServer) ->
 	end,
 	spawn(?MODULE,server,[Port]).
 
-%% para conectar dos servers en distintas PC's:
-%% Inicializar ambos. En uno de ellos 
-%% >gen_tcp:connect('ip donde esta el otro server','puerto con el que se inicio el nodo',[opciones]).
-%% >net_kernel:connect_node('nombre del nodo').
-
-%% para conectar dos servers en la misma PC:
-%% Inicializar ambos.
-%% >net_kernel:connect_node('nombre del nodo').
-
 server(Port) ->
-	Resolve = fun (Name,Pid1,Pid2) -> Pid1 end,
+	Resolve = fun (_,Pid1,_) -> Pid1 end,
 	{ok,LSock} = gen_tcp:listen(Port, [{packet, 0},{active,false}]), %%server escucha en port Port
 	ClientPid = spawn(?MODULE,list_of_client,[[]]), %%creo el proceso que maneja la lista para los clientes
 	yes = global:register_name(clients_pid,ClientPid,Resolve),
@@ -76,7 +72,7 @@ psocket_loop(CSock) ->
 																		{error} -> psocket_loop(CSock)
 														end;
 					["BYE"] 			 	-> gen_tcp:close(CSock),exit(normal);
-					Otherwise 			-> gen_tcp:send(CSock,"ErReg"),
+					_Else 					-> gen_tcp:send(CSock,"ErReg"),
 														 psocket_loop(CSock)
 				end
 			end;
@@ -95,16 +91,26 @@ receive
 			end;
 	empate         -> gen_tcp:send(CSock,"Han empatado. Al menos no perdieron ¯\\(ツ)_/¯~n"),psocket_loop(CSock,N);
 	er_juego_inex  -> gen_tcp:send(CSock,"ErPlaInex"),psocket_loop(CSock,N);
-	er_pla_casilla -> gen_tcp:send(CSock,"ErPlaCas"),psocket_loop(CSock,N);
+	er_pla_cas1		 -> gen_tcp:send(CSock,"ErPlaCas1"),psocket_loop(CSock,N);
 	er_pla_jug     -> gen_tcp:send(CSock,"ErPlaJug"),psocket_loop(CSock,N);
-	{print,Data}   -> io:format("LLEGUE HASTA ACA!data: ~p~n",[Data]),gen_tcp:send(CSock,Data),psocket_loop(CSock,N);
+	er_pla_cas2    -> gen_tcp:send(CSock,"ErPlaCas2"),psocket_loop(CSock,N);
+	er_pla_turno   -> gen_tcp:send(CSock,"ErPlaTur"),psocket_loop(CSock,N);
+	er_obs_part    -> gen_tcp:send(CSock,"ErObsPart"),psocket_loop(CSock,N);
+	er_obs_ya      -> gen_tcp:send(CSock,"ErObsYa"),psocket_loop(CSock,N);
+	{ok_obs,G}     -> gen_tcp:send(CSock,"OkObs "++G),psocket_loop(CSock,N);
+	er_lea         -> gen_tcp:send(CSock,"ErLea"),psocket_loop(CSock,N);
+	ok_lea         -> gen_tcp:send(CSock,"OkLea"),psocket_loop(CSock,N);
+	{abandona,G}   -> gen_tcp:send(CSock,"Abandona "++G),psocket_loop(CSock,N);
+	{abandona2,J,G}-> gen_tcp:send(CSock,"Abandona2 "++J++" "++G),psocket_loop(CSock,N);
+
+	{print,Data}   -> gen_tcp:send(CSock,Data),psocket_loop(CSock,N);
 	{error,Closed} -> io:format("Closed:~p~n",[Closed]),gen_tcp:close(CSock),exit(normal)
 end.	
 
 pcommand(Data,CSock,N) ->
-	io:format("DATA: ~p~n",[Data]),
+	
 	case string:tokens(lists:sublist(Data, length(Data)-1)," ") of
-		["CON",Nombre]          -> gen_tcp:send(CSock,"ErCon2");
+		["CON",_]          -> gen_tcp:send(CSock,"ErCon2");
 		["LSG"]                 -> lsg(CSock);
 		["NEW", NJuego]         -> newgame(NJuego,CSock,N);
 		["ACC", Juego]  				-> acc(Juego,CSock,N);
@@ -113,7 +119,7 @@ pcommand(Data,CSock,N) ->
 		["LEA", NJuego] 				-> lea(N,NJuego);
 		["BYE"] 								-> bye(N);
 		["HELP"] 								-> game:help(N);
-		Otherwise 							-> gen_tcp:send(CSock,"Er")
+		_Else     							-> gen_tcp:send(CSock,"Er")
 	end.
 
 %%Encargado de mandar la info de carga al resto de los nodos
@@ -224,7 +230,7 @@ acc(Juego,CSock,N) ->
 				true  -> global:send(J,{datos,self()}),
 						 receive {send,Jugadores,Observadores} ->
 							if length(Jugadores) == 2 -> gen_tcp:send(CSock,"ErAccEnCurso");
-								 true -> case element(2,lists:nth(1,Jugadores)) == N of
+								 true -> case element(2,hd(Jugadores)) == N of
 												 true 	-> gen_tcp:send(CSock,"ErAccContraTi");
 												 false 	-> global:send(J,{update,Jugadores++[{2,N}],Observadores}),
 																		gen_tcp:send(CSock,"OkAcc "++Juego),
@@ -259,7 +265,7 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
 																end;
 												false -> case game:empate(TNew) of
 																	true -> lists:foreach(fun(X)->global:send(element(2,X),empate) end,Jugadores),
-																					lists:foreach(fun(X)->global:send(X,empate) end,Observadores),
+																					lists:foreach(fun(Y)->global:send(Y,empate) end,Observadores),
 																					global:send(games_pid,{elim,J}),exit(normal);
 																	false -> TurnoNew = game:turno(Turno),
 																					 X = game:es_turno(TurnoNew,Jugadores),
@@ -267,9 +273,9 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
 																					 game(J,TNew,Jugadores,Observadores,TurnoNew)
 																 end
 												end;
-		{start} ->X = game:es_turno(Turno,Jugadores),io:format("~p~n",[X]),
+		{start} ->X = game:es_turno(Turno,Jugadores),
 							global:send(X,{print,"-- Es tu turno "++atom_to_list(X)++" --~n"}),
-							Aux = "+ "++atom_to_list(J)++" | "++atom_to_list(element(2,lists:nth(1,Jugadores)))++" (X) | "++atom_to_list(element(2,lists:nth(2,Jugadores)))++" (0) +~n~n",
+							Aux = "+ "++atom_to_list(J)++" | "++atom_to_list(element(2,hd(Jugadores)))++" (X) | "++atom_to_list(element(2,lists:nth(2,Jugadores)))++" (0) +~n~n",
 							lists:foreach(fun(Y) -> global:send(element(2,Y),{print,Aux}),global:send(element(2,Y),{print,game:tprint(Tablero)}) end,Jugadores),
 							lists:foreach(fun(Z) -> global:send(Z,{print,Aux}),global:send(Z,{print,game:tprint(Tablero)}) end,Observadores),
 							game(J,Tablero,Jugadores,Observadores,Turno);
@@ -291,25 +297,23 @@ jugada(NJuego,Casilla,N) ->
 							true -> ok
 					end,
 					case (Casilla < "1") or (Casilla > "9") of
-						true -> global:send(N,er_pla_casilla),exit(normal);
+						true -> global:send(N,er_pla_cas1),exit(normal);
 						false -> ok
 					end,
 					C = list_to_integer(Casilla),
 					global:send(J,{datos2,self()}),
 					receive
-						{send,T,Jugadores,Obs,Turno} ->
+						{send,T,Jugadores,_,Turno} ->
 							case length(Jugadores) /= 2 of 
 								 true -> global:send(N,er_pla_jug);
-								 false -> A = element(2,lists:nth(1,Jugadores)), B = element(2,lists:nth(2,Jugadores)),
+								 false -> A = element(2,hd(Jugadores)), B = element(2,lists:nth(2,Jugadores)),
 												 case lists:member(N,[A,B]) and (game:es_turno(Turno,Jugadores) == N) of 
-															true -> %io:format("C:~p T: ~p A: ~p~n",[Casilla,find(Casilla,T)," " == find(Casilla,T)]),
-																			case game:find(C,T) == " " of 
+															true -> case game:find(C,T) == " " of 
 																				true -> TNew = game:update(C,T,Turno),
-																								%TurnoNew = game:turno(Turno),
 																								global:send(J,{update2,TNew});
-																				false -> global:send(N,{print,"ERROR PLA (Casilla)\n"})
+																				false -> global:send(N,er_pla_cas2)
 																			end;
-															false -> global:send(N,{print,"ERROR PLA (Jugador/Turno)\n"})
+															false -> global:send(N,er_pla_turno)
 												 end
 							end
 					end
@@ -321,18 +325,20 @@ abandona(N,NJuego) ->
 	% solo llamo a esta funcion en jugada, donde ya chequie si el juego existe.
 	global:send(J,{datos,self()}),
 	receive
-		{send,Jugadores,Observadores} ->
+		{send,Jugadores,_} ->
+			J1 = element(2,hd(Jugadores)),
+			
 			if 	length(Jugadores) /= 2 -> 
-						game:send_msj_j1(Jugadores,"OK PLA "++NJuego++" BYE\n"),global:send(J,bye);
+						%%Solo está el jugador 1
+						global:send(J1,{abandona,NJuego}),global:send(J,bye);
 					true ->
-					J1 = element(2,lists:nth(1,Jugadores)),
 					J2 = element(2,lists:nth(2,Jugadores)),
 					case N == J1 of
-						true -> global:send(J1,{print,"OK PLA "++NJuego++" BYE\n"}),
-										global:send(J2,{print,atom_to_list(J1)++" abandono "++NJuego++"\n"}),
+						true -> global:send(J1,{abandona,NJuego}),
+										global:send(J2,{abandona2,atom_to_list(J1),NJuego}),
 										global:send(J,bye);
-						false -> global:send(J2,{print,"OK PLA "++NJuego++" BYE\n"}),
-										global:send(J1,{print,atom_to_list(J2)++" abandono "++NJuego++"\n"}),
+						false -> global:send(J2,{abandona,NJuego}),
+										global:send(J1,{abandona2,atom_to_list(J2),NJuego}),
 										global:send(J,bye)
 					end
 			end
@@ -343,20 +349,19 @@ observa(Juego,N) ->
 	global:send(games_pid,{req,self()}),
 	receive {send,L} ->
 		case lists:member(J,L) of
-			false -> global:send(N,{print,"Juego inexistente.\n"});
+			false -> global:send(N,er_juego_inex); %%Utilizo el mismo mensaje que antes. El error es el mismo.
 			true -> global:send(J,{datos2,self()}),
 							receive
 								{send,Tablero,Jugadores,Observadores,Turno} -> 	
-									case (element(2,lists:nth(1,Jugadores)) == N) or (element(2,lists:nth(1,Jugadores)) == N) of
-										true -> global:send(N,{print,"No puedes observar un juego en el que participas.\n"});
+									case (element(2,hd(Jugadores)) == N) or (element(2,lists:nth(2,Jugadores)) == N) of
+										true -> global:send(N,er_obs_part);
 										false ->	case lists:member(N,Observadores) of
-																true -> global:send(N,{print,"Ya estas observando "++Juego++"\n"});
+																true -> global:send(N,er_obs_ya);
 																false ->  global:send(games_pid,{req,self()}),
 																					receive {send,L} ->
 																						case lists:member(J,L) of
-																							false -> global:send(N,{print,"Juego inexistente\n"});
-																							true -> io:format("Observadores: ~p~n",[Observadores++[N]]),
-																											global:send(N,{print,"OK OBS "++Juego++"\n"}),
+																							false -> global:send(N,er_juego_inex);
+																							true -> global:send(N,{ok_obs,Juego}),
 																											game:presentacion_o(J,Jugadores,Tablero,[N],Turno),
 																											global:send(J,{update,Jugadores,Observadores++[N]})
 																						end
@@ -373,41 +378,43 @@ lea(N,NJuego) ->
 	receive
 		{send,L} -> 
 			case lists:member(J,L) of
-				false -> global:send(N,{print,"Juego inexistente\n"});
+				false -> global:send(N,er_juego_inex);
 				true -> global:send(J,{datos,self()}),
 								receive
 									{send,Jugadores,Observadores} -> 
 											case lists:member(N,Observadores) of
-												false -> global:send(N,{print,"No estas observando "++NJuego++"\n"});
+												false -> global:send(N,er_lea);
 												true -> Obs_new = lists:delete(N,Observadores),
-																global:send(N,{print,"OK LEA "++NJuego++"\n"}),
+																global:send(N,ok_lea),
 																global:send(J,{update,Jugadores,Obs_new})
 											end
 								end
 			end
 	end.
 
-
+%%Cuando alguien cierra su conexion, comunicamos a todos
+%%sus contrincantes y observadores de dichos juegos
+%%que ha abandonado.
 bye(N) ->
 	global:send(games_pid,{req,self()}),
 	receive {send,L} ->
 		lists:foreach(fun (X) -> global:send(X,{datos,self()}),
 								 receive
 									{send,Jugadores,Observadores} ->
-										J1 = element(2,lists:nth(1,Jugadores)),
+										J1 = element(2,hd(Jugadores)),
 										if (length(Jugadores) == 1) and (J1 == N)-> 
 											global:send(X,bye);
 											true -> 
 												J2 = element(2,lists:nth(2,Jugadores)),
 												case J1 == N of
 													 true -> 
-														 global:send(J2,{print,atom_to_list(J1)++" ha abandonado.\n"}),
-														 lists:foreach( fun (X) -> global:send(X,{print,atom_to_list(J1)++" ha abandonado.\n"}) end,Observadores),
+														 global:send(J2,{abandona2,atom_to_list(J1),X}),
+														 lists:foreach( fun (Z) -> global:send(Z,{abandona2,atom_to_list(J1),X}) end,Observadores),
 														 global:send(X,bye); 
 													 false -> case J2 == N of
 																			true ->
-																				global:send(J1,{print,atom_to_list(J2)++" ha abandonado.\n"}),
-																				lists:foreach( fun (X) -> global:send(X,{print,atom_to_list(J2)++" ha abandonado.\n"}) end,Observadores),
+																				global:send(J1,{abandona2,atom_to_list(J2),X}),
+																				lists:foreach( fun (Y) -> global:send(Y,{abandona2,atom_to_list(J2),X}) end,Observadores),
 																				global:send(X,bye); 
 																			false -> 
 																				ok 	

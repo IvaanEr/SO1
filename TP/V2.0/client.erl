@@ -9,12 +9,12 @@ client(Ip,Port) ->
 	P = spawn(?MODULE,salida,[CSock,[]]),
 	entrada(CSock,P).
 
-cmd(CMD,CSock) ->
-	case gen_tcp:send(CSock,CMD) of
-		ok -> {ok,Packet} = gen_tcp:recv(CSock,0),
-					io:format("~p~n",[Packet]);
-		{error,Reason} -> io:format("error: ~p~n",[Reason])
-	end.
+% cmd(CMD,CSock) ->
+% 	case gen_tcp:send(CSock,CMD) of
+% 		ok -> {ok,Packet} = gen_tcp:recv(CSock,0),
+% 					io:format("~p~n",[Packet]);
+% 		{error,Reason} -> io:format("error: ~p~n",[Reason])
+% 	end.
 
 salida(CSock,Name) ->
 	Cmd = io:get_line(Name++"> "),
@@ -27,7 +27,7 @@ salida(CSock,Name) ->
 
 entrada(CSock,P) ->
 	case gen_tcp:recv(CSock,0) of
-		{ok,Packet} -> io:format("~p~n~n",[Packet]),
+		{ok,Packet} -> 
 			case string:tokens(Packet," ") of
 				["ErReg"]        -> io:format("Primero debes registrarte. Utilice CON [Id]~n");
 				["Er"]           -> io:format("Comando Incorrecto  ¯\\_(ツ)_/¯ HELP para la ayuda~n"); 
@@ -45,12 +45,25 @@ entrada(CSock,P) ->
 				["ErNewGame"]    -> io:format("Nombre de juego en uso.~n");
 
 				["ErPlaInex"]    -> io:format("Juego inexistente.~n");
-				["ErPlaCas"]     -> io:format("Casilla incorrecta.~n");
+				["ErPlaCas1"]    -> io:format("Casilla incorrecta [Rango].~n");
+				["ErPlaCas2"]		 -> io:format("Casilla incorrecta [Ocupada].~n");
 				["ErPlaJug"]     -> io:format("Aun falta un jugador.~n");
+				["ErPlaTur"]     -> io:format("No es tu turno o no perticipas en ese juego.~n");
 
-				Otherwise        -> io:format(Packet)	
-			end
+				["Abandona",G]   -> io:format("Has abandonado "++G++".~n");
+				["Abandona2",J,G]-> io:format(J++" ha abandonado "++G++".~n");
 
+				["ErObsPart"]    -> io:format("No puedes observar un juego en el que participas.~n");
+				["ErObsYa"]      -> io:format("Ya estas observando ese juego.~n");
+				["OkObs",G]      -> io:format("Comenzaste a observar "++G++".~n");
+
+				["ErLea"]        -> io:format("No estas observando ese juego.~n");
+				["OkLea"]        -> io:format("Dejaste de observar ese juego.~n");
+
+				_Else						 -> io:format(Packet)	
+			end;
+
+		{error,closed} -> io:format("El servidor se ha cerrado inesperadamente. Intente nuevamente en unos minutos (っ◕‿◕)っ~n")	
 
 	end,
 	P!sigue,
