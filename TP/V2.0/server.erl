@@ -71,6 +71,7 @@ psocket_loop(CSock) ->
 														receive {con,N} -> io:format("registro exitoso~n"),psocket_loop(CSock,N);
 																		{error} -> psocket_loop(CSock)
 														end;
+					["HELP"] 				-> gen_tcp:send(CSock,"HelpSinCon"),psocket_loop(CSock);
 					["BYE"] 			 	-> gen_tcp:close(CSock),exit(normal);
 					_Else 					-> gen_tcp:send(CSock,"ErReg"),
 														 psocket_loop(CSock)
@@ -254,6 +255,8 @@ game_init(N,J) ->
 
 %% Maneja el juego J.
 %% Jugadores = [{1,J1},{2,J2}]
+%% Se usa datos,datos2 para no enviar cosas innecesarias cuando se puede evitar.
+%% Lo mismo para update y update2.
 game(J,Tablero,Jugadores,Observadores,Turno) ->
 	receive
 		{datos,Pid} -> Pid ! {send,Jugadores,Observadores}, game(J,Tablero,Jugadores,Observadores,Turno);

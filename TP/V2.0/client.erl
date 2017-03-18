@@ -3,18 +3,11 @@
 
 %binary,{packet, 0},{active,false}
 
-client(Ip,Port) ->
+con(Ip,Port) ->
 	{ok,CSock} = gen_tcp:connect(Ip,Port,[{packet,0},{active,false}]),
-	io:format("Bienvenido!~n"),
+	io:format("Bienvenido!~nRecuerde, primero debes conectarte con el comando CON [id].~n"),
 	P = spawn(?MODULE,salida,[CSock,[]]),
 	entrada(CSock,P).
-
-% cmd(CMD,CSock) ->
-% 	case gen_tcp:send(CSock,CMD) of
-% 		ok -> {ok,Packet} = gen_tcp:recv(CSock,0),
-% 					io:format("~p~n",[Packet]);
-% 		{error,Reason} -> io:format("error: ~p~n",[Reason])
-% 	end.
 
 salida(CSock,Name) ->
 	Cmd = io:get_line(Name++"> "),
@@ -30,7 +23,9 @@ entrada(CSock,P) ->
 		{ok,Packet} -> 
 			case string:tokens(Packet," ") of
 				["ErReg"]        -> io:format("Primero debes registrarte. Utilice CON [Id]~n");
-				["Er"]           -> io:format("Comando Incorrecto  ¯\\_(ツ)_/¯ HELP para la ayuda~n"); 
+				["Er"]           -> io:format("Comando Incorrecto  ¯\\_(ツ)_/¯ HELP para la ayuda~n");
+
+				["HelpSinCon"]   -> io:format("Primero debes conectarte con el comando CON [id].~n");
 
 				["OkCon",Nombre] -> io:format("Registro exitoso "++Nombre++"~n"), P!{new,Nombre};
 				["ErCon",Nombre] -> io:format("El nombre "++Nombre++" esta en uso~n");
