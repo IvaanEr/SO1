@@ -89,7 +89,7 @@ receive
 				{send,Nodo} 	 ->	spawn(Nodo,?MODULE, pcommand, [Data,CSock,N]),
 													psocket_loop(CSock,N)
 			end;
-	empate         -> gen_tcp:send(CSock,"Han empatado. Al menos no perdieron ¯\\(ツ)_/¯~n"),psocket_loop(CSock,N);
+	empate         -> gen_tcp:send(CSock,"Empate"),psocket_loop(CSock,N);
 	er_juego_inex  -> gen_tcp:send(CSock,"ErPlaInex"),psocket_loop(CSock,N);
 	er_pla_cas1		 -> gen_tcp:send(CSock,"ErPlaCas1"),psocket_loop(CSock,N);
 	er_pla_jug     -> gen_tcp:send(CSock,"ErPlaJug"),psocket_loop(CSock,N);
@@ -110,7 +110,7 @@ end.
 pcommand(Data,CSock,N) ->
 	
 	case string:tokens(lists:sublist(Data, length(Data)-1)," ") of
-		["CON",_]          -> gen_tcp:send(CSock,"ErCon2");
+		["CON",_]               -> gen_tcp:send(CSock,"ErCon2");
 		["LSG"]                 -> lsg(CSock);
 		["NEW", NJuego]         -> newgame(NJuego,CSock,N);
 		["ACC", Juego]  				-> acc(Juego,CSock,N);
@@ -141,6 +141,10 @@ pbalance() ->
 	end,
 	pbalance().
 
+%Proceso que lleva el diccionario {Nodo,Carga}.
+%% Si se agrega un nuevo nodo, lo agrega al dicc
+%% pstat de cada nodo regularmente le informa la carga
+%% cuando pbalance le pide un nodo, le envia el de menor carga
 cargas(Dict) ->
 	receive
 	{newNode,Node}      -> cargas(dict:store(Node,statistics(total_active_tasks),Dict));
@@ -153,8 +157,6 @@ cargas(Dict) ->
 													cargas(Dict)
 	end.
 
-	
-	
 %Comando CON. Registra un usuario con Nombre.	
 connect(Nombre, CSock, PSocketPid) ->
 		N = list_to_atom(Nombre),
@@ -246,7 +248,7 @@ game_init(N,J) ->
 	Tablero = game:inicializar_tablero(),
 	Jugadores = [{1,N}],
 	Observadores = [],
-	Turno = random:uniform(2), %un numero aleatorio entre 1 y 2, para que no empiece siempre el mismo
+	Turno = (random:uniform(1000) rem 2)+1, %un numero aleatorio entre 1 y 2, para que no empiece siempre el mismo
 	io:format("Turno: ~p~n",[Turno]),
 	game(J,Tablero,Jugadores,Observadores,Turno).
 

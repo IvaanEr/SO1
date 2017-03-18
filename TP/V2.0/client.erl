@@ -60,6 +60,8 @@ entrada(CSock,P) ->
 				["ErLea"]        -> io:format("No estas observando ese juego.~n");
 				["OkLea"]        -> io:format("Dejaste de observar ese juego.~n");
 
+				["Empate"]       -> io:format("Han empatado. Al menos no perdieron ¯\\_(ツ)_/¯~n");
+
 				_Else						 -> io:format(Packet)	
 			end;
 
