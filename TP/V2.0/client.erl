@@ -60,8 +60,7 @@ entrada(CSock,P) ->
 				_Else						 -> io:format(Packet)	
 			end;
 
-		{error,closed} -> io:format("El servidor se ha cerrado inesperadamente. Intente nuevamente en unos minutos (っ◕‿◕)っ~n")	
-
+		{error,closed} -> io:format("Se ha cerrado la conexión  (っ◕‿◕)っ~n")
 	end,
 	P!sigue,
 	entrada(CSock,P).

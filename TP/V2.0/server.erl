@@ -105,7 +105,8 @@ receive
 	{abandona2,J,G}-> gen_tcp:send(CSock,"Abandona2 "++J++" "++G),psocket_loop(CSock,N);
 
 	{print,Data}   -> gen_tcp:send(CSock,Data),psocket_loop(CSock,N);
-	{error,Closed} -> io:format("Closed:~p~n",[Closed]),gen_tcp:close(CSock),exit(normal)
+	
+	{bye,Closed}   -> gen_tcp:close(CSock),exit(Closed)
 end.	
 
 pcommand(Data,CSock,N) ->
@@ -427,6 +428,6 @@ bye(N) ->
 												end
 										end
 									end end, L),
-		global:send(N,{error,normal})
+		global:send(N,{bye,normal})
 	end.
  
