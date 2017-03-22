@@ -95,7 +95,7 @@ receive
 	empate         -> gen_tcp:send(CSock,"Empate"),psocket_loop(CSock,N);
 	er_con2        -> gen_tcp:send(CSock,"ErCon2"),psocket_loop(CSock,N);
 	er_juego_inex  -> gen_tcp:send(CSock,"ErPlaInex"),psocket_loop(CSock,N);
-	{ok_new_game,N}-> gen_tcp:send(CSock,"OkNewGame "++N),psocket_loop(CSock,N);
+	{ok_new_game,Nombre}-> gen_tcp:send(CSock,"OkNewGame "++Nombre),psocket_loop(CSock,N);
 	er_new_game    -> gen_tcp:send(CSock,"ErNewGame"),psocket_loop(CSock,N);
 	er_acc_inex    -> gen_tcp:send(CSock,"ErAccInex"), psocket_loop(CSock,N);
 	er_acc_en_curso-> gen_tcp:send(CSock,"ErAccEnCurso"),psocket_loop(CSock,N);
@@ -214,23 +214,23 @@ newgame(NJuego,N) ->
 %%Esta funcion directamente imprime en el cliente.
 lsg(N) ->
 	%%Imprimo nombres, de jugadores o observadores, separados por "|".
-	Imp_datos = fun (L) -> 	lists:foreach(fun (X) -> global:send(N,atom_to_list(X)++" | ") end,L),
-													global:send(N,"~n") end,
+	Imp_datos = fun (L) -> 	lists:foreach(fun (X) -> global:send(N,{print, atom_to_list(X)++" | "}) end,L),
+													global:send(N,{print, "~n"}) end,
 	%%Uso Imp_datos para imprimir los jugadores y observadores de cierto juego.						 						
 	Obt_datos = fun (Game) -> global:send(Game,{datos,self()}),
 														receive
-														{send,Jugadores,Observadores} -> global:send(N,"Jugadores:~n"),
+														{send,Jugadores,Observadores} -> global:send(N,{print,"Jugadores:~n"}),
 																						 Imp_datos(lists:map(fun(X)-> element(2,X) end,Jugadores)),
-																						 global:send(N,"Observadores:~n"),
+																						 global:send(N,{print, "Observadores:~n"}),
 																						 Imp_datos(Observadores),
-																						 global:send(N,"············~n~n")
+																						 global:send(N,{print, "············~n~n"})
 														end
 							end,
-	global:send(N,"Lista de juegos:~n"),
+	global:send(N,{print,"Lista de juegos:~n"}),
 	%%Uso Obt_datos para imprimir jugadores y observadores de todos los juegos.
 	global:send(games_pid,{req,self()}),
 	receive
-		{send,L} -> lists:foreach(fun (X) -> global:send(N,"Juego: "++atom_to_list(X)++"~2n"),
+		{send,L} -> lists:foreach(fun (X) -> global:send(N,{print,"Juego: "++atom_to_list(X)++"~2n"}),
 											 Obt_datos(X) end, L)
 	end.
 
