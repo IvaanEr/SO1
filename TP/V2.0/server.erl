@@ -22,7 +22,7 @@ start(SName,Port,LServer) ->
 	net_kernel:start([SName,shortnames]),
 	case length(LServer) > 0 of
 			true -> S = hd(LServer),
-							net_adm:ping(S);
+							pong = net_adm:ping(S);
 			false -> ok
 	end,
 	spawn(?MODULE,server,[Port]).
@@ -45,12 +45,13 @@ server(Port) ->
 
 %% Espera nuevas conexiones y crea un proceso para atender cada una.
 dispatcher(LSock) ->
-		{ok, CSock} = gen_tcp:accept(LSock),
 		{pbalance,node()} ! {req,self()},							%%psocket lo ejecuto en el nodo menos cargadp
-		receive {send,Nodo} ->												%%
-		Pid = spawn(Nodo,?MODULE, psocket, [CSock])   %%
+		receive {send,Nodo} ->
+			{ok, CSock} = spawn(Nodo,?MODULE,gen_tcp:accept,[LSock]),
+			io:format("CSock: ~p~n",[CSock]),
+			Pid = spawn(Nodo,?MODULE, psocket, [CSock]), %nodo  
+			ok = gen_tcp:controlling_process(CSock, Pid), %%Ahora a CSock lo controla Pid -- los mensajes a CSock llegan a Pid
 		end,
-		ok = gen_tcp:controlling_process(CSock, Pid), %%Ahora a CSock lo controla Pid -- los mensajes a CSock llegan a Pid
 		Pid ! ok,
 		dispatcher(LSock).
 	
@@ -67,9 +68,13 @@ psocket_loop(CSock) ->
 			{pbalance,node()} ! {req,self()},
 			receive {send,Nodo} ->
 				case string:tokens(lists:sublist(Data, length(Data)-1)," ") of
-					["CON",Nombre] 	-> spawn(Nodo,?MODULE,connect,[Nombre,CSock,self()]),
-														receive {con,N} -> io:format("registro exitoso~n"),psocket_loop(CSock,N);
-																		{error} -> psocket_loop(CSock)
+					["CON",Nombre] 	-> io:format("Nodo exc: ~p~n",[Nodo]),
+														 spawn(Nodo,?MODULE,connect,[Nombre,self()]),
+
+														receive {con,N} 			 -> io:format("registro exitoso~n"),
+																											 gen_tcp:send(CSock,"OkCon "++atom_to_list(N)),
+																							 					psocket_loop(CSock,N);
+																		{error,Nombre} -> gen_tcp:send(CSock, "ErCon "++Nombre),psocket_loop(CSock)
 														end;
 					["HELP"] 				-> gen_tcp:send(CSock,"HelpSinCon"),psocket_loop(CSock);
 					["BYE"] 			 	-> gen_tcp:close(CSock),exit(normal);
@@ -160,16 +165,16 @@ cargas(Dict) ->
 	end.
 
 %Comando CON. Registra un usuario con Nombre.	
-connect(Nombre, CSock, PSocketPid) ->
+connect(Nombre, PSocketPid) ->
 		N = list_to_atom(Nombre),
 		case global:register_name(N,PSocketPid) of
 				yes -> 	global:send(clients_pid,{new_client,N}),
-								gen_tcp:send(CSock, "OkCon "++Nombre),
+								%ok = gen_tcp:send(CSock, "OkCon "++Nombre),
 								io:format("OK CON~n"),
 								PSocketPid ! {con,N};
 				no 	-> 	io:format("ErCon "++Nombre),
-				gen_tcp:send(CSock, "ErCon "++Nombre),
-				PSocketPid ! {error}
+				%gen_tcp:send(CSock, "ErCon "++Nombre),
+				PSocketPid ! {error,Nombre}
 		end.
 
 %% Lista de los clientes conectados
