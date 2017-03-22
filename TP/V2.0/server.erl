@@ -45,13 +45,10 @@ server(Port) ->
 
 %% Espera nuevas conexiones y crea un proceso para atender cada una.
 dispatcher(LSock) ->
-		{pbalance,node()} ! {req,self()},							%%psocket lo ejecuto en el nodo menos cargadp
-		receive {send,Nodo} ->
-			{ok, CSock} = spawn(Nodo,gen_tcp,accept,[LSock]),
-			io:format("CSock: ~p~n",[CSock]),
-			Pid = spawn(Nodo,?MODULE, psocket, [CSock]), %nodo  
-			ok = gen_tcp:controlling_process(CSock, Pid) %%Ahora a CSock lo controla Pid -- los mensajes a CSock llegan a Pid
-		end,
+		{ok, CSock} = gen_tcp:accept(LSock),
+		io:format("CSock: ~p~n",[CSock]),
+		Pid = spawn(?MODULE, psocket, [CSock]),  
+		ok = gen_tcp:controlling_process(CSock, Pid), %%Ahora a CSock lo controla Pid -- los mensajes a CSock llegan a Pid
 		Pid ! ok,
 		dispatcher(LSock).
 	
@@ -92,11 +89,18 @@ receive
 	{tcp,CSock,Data} ->
 			{pbalance,node()} ! {req,self()},
 			receive
-				{send,Nodo} 	 ->	spawn(Nodo,?MODULE, pcommand, [Data,CSock,N]),
+				{send,Nodo} 	 ->	spawn(Nodo,?MODULE, pcommand, [Data,N]),
 													psocket_loop(CSock,N)
 			end;
 	empate         -> gen_tcp:send(CSock,"Empate"),psocket_loop(CSock,N);
+	er_con2        -> gen_tcp:send(CSock,"ErCon2"),psocket_loop(CSock,N);
 	er_juego_inex  -> gen_tcp:send(CSock,"ErPlaInex"),psocket_loop(CSock,N);
+	{ok_new_game,N}-> gen_tcp:send(CSock,"OkNewGame "++N),psocket_loop(CSock,N);
+	er_new_game    -> gen_tcp:send(CSock,"ErNewGame"),psocket_loop(CSock,N);
+	er_acc_inex    -> gen_tcp:send(CSock,"ErAccInex"), psocket_loop(CSock,N);
+	er_acc_en_curso-> gen_tcp:send(CSock,"ErAccEnCurso"),psocket_loop(CSock,N);
+	er_acc_vs_ti   -> gen_tcp:send(CSock,"ErAccContraTi"), psocket_loop(CSock,N);
+	ok_acc         -> gen_tcp:send(CSock, "OkAcc"), psocket_loop(CSock,N);
 	er_pla_cas1		 -> gen_tcp:send(CSock,"ErPlaCas1"),psocket_loop(CSock,N);
 	er_pla_jug     -> gen_tcp:send(CSock,"ErPlaJug"),psocket_loop(CSock,N);
 	er_pla_cas2    -> gen_tcp:send(CSock,"ErPlaCas2"),psocket_loop(CSock,N);
@@ -108,25 +112,26 @@ receive
 	ok_lea         -> gen_tcp:send(CSock,"OkLea"),psocket_loop(CSock,N);
 	{abandona,G}   -> gen_tcp:send(CSock,"Abandona "++G),psocket_loop(CSock,N);
 	{abandona2,J,G}-> gen_tcp:send(CSock,"Abandona2 "++J++" "++G),psocket_loop(CSock,N);
+  er             -> gen_tcp:send(CSock,"Er"), psocket_loop(CSock, N);
 
 	{print,Data}   -> gen_tcp:send(CSock,Data),psocket_loop(CSock,N);
 	
 	{bye,Closed}   -> gen_tcp:close(CSock),exit(Closed)
 end.	
 
-pcommand(Data,CSock,N) ->
+pcommand(Data,N) ->
 	
 	case string:tokens(lists:sublist(Data, length(Data)-1)," ") of
-		["CON",_]               -> gen_tcp:send(CSock,"ErCon2");
-		["LSG"]                 -> lsg(CSock);
-		["NEW", NJuego]         -> newgame(NJuego,CSock,N);
-		["ACC", Juego]  				-> acc(Juego,CSock,N);
+		["CON",_]               -> global:send(N,er_con2);
+		["LSG"]                 -> lsg(N);
+		["NEW", NJuego]         -> newgame(NJuego,N);
+		["ACC", Juego]  				-> acc(Juego,N);
 		["PLA", NJuego,Casilla] -> jugada(NJuego,Casilla,N);
 		["OBS", NJuego] 				-> observa(NJuego,N);
 		["LEA", NJuego] 				-> lea(N,NJuego);
 		["BYE"] 								-> bye(N);
 		["HELP"] 								-> game:help(N);
-		_Else     							-> gen_tcp:send(CSock,"Er")
+		_Else     							-> global:send(N, er) %gen_tcp:send(CSock,"Er")
 	end.
 
 %%Encargado de mandar la info de carga al resto de los nodos
@@ -196,53 +201,53 @@ lists_of_games(L) ->
 	end.
 
 %Comando NEW. N crea el juego NJuego.
-newgame(NJuego,CSock,N) ->
+newgame(NJuego,N) ->
 	J = list_to_atom(NJuego),
 	Game = spawn(?MODULE,game_init,[N,J]),
 	case global:register_name(J,Game) of
-		yes -> gen_tcp:send(CSock,"OkNewGame "++NJuego),
+		yes -> global:send(N,{ok_new_game,NJuego}),%gen_tcp:send(CSock,"OkNewGame "++NJuego),
 					 global:send(games_pid,{new,J});
-		no 	-> gen_tcp:send(CSock,"ErNewGame")
+		no 	-> global:send(N,er_new_game) %gen_tcp:send(CSock,"ErNewGame")
 	end.
 	
 %Comando LSG. Para cada juego, su ID y participantes.
 %%Esta funcion directamente imprime en el cliente.
-lsg(CSock) ->
+lsg(N) ->
 	%%Imprimo nombres, de jugadores o observadores, separados por "|".
-	Imp_datos = fun (L) -> 	lists:foreach(fun (X) -> gen_tcp:send(CSock,atom_to_list(X)++" | ") end,L),
-													gen_tcp:send(CSock,"~n") end,
+	Imp_datos = fun (L) -> 	lists:foreach(fun (X) -> global:send(N,atom_to_list(X)++" | ") end,L),
+													global:send(N,"~n") end,
 	%%Uso Imp_datos para imprimir los jugadores y observadores de cierto juego.						 						
 	Obt_datos = fun (Game) -> global:send(Game,{datos,self()}),
 														receive
-														{send,Jugadores,Observadores} -> gen_tcp:send(CSock,"Jugadores:~n"),
+														{send,Jugadores,Observadores} -> global:send(N,"Jugadores:~n"),
 																						 Imp_datos(lists:map(fun(X)-> element(2,X) end,Jugadores)),
-																						 gen_tcp:send(CSock,"Observadores:~n"),
+																						 global:send(N,"Observadores:~n"),
 																						 Imp_datos(Observadores),
-																						 gen_tcp:send(CSock,"············~n~n")
+																						 global:send(N,"············~n~n")
 														end
 							end,
-	gen_tcp:send(CSock,"Lista de juegos:~n"),
+	global:send(N,"Lista de juegos:~n"),
 	%%Uso Obt_datos para imprimir jugadores y observadores de todos los juegos.
 	global:send(games_pid,{req,self()}),
 	receive
-		{send,L} -> lists:foreach(fun (X) -> gen_tcp:send(CSock,"Juego: "++atom_to_list(X)++"~2n"),
+		{send,L} -> lists:foreach(fun (X) -> global:send(N,"Juego: "++atom_to_list(X)++"~2n"),
 											 Obt_datos(X) end, L)
 	end.
 
 %Comando ACC. N accede a Juego si es posible.
-acc(Juego,CSock,N) ->
+acc(Juego,N) ->
 	J = list_to_atom(Juego),
 	global:send(games_pid,{req,self()}),
 	receive
 	{send,L} -> case lists:member(J,L) of
-				false -> gen_tcp:send(CSock,"ErAccInex");
+				false -> global:send(N, er_acc_inex); %gen_tcp:send(CSock,"ErAccInex");
 				true  -> global:send(J,{datos,self()}),
 						 receive {send,Jugadores,Observadores} ->
-							if length(Jugadores) == 2 -> gen_tcp:send(CSock,"ErAccEnCurso");
+							if length(Jugadores) == 2 -> global:send(N, er_acc_en_curso);%gen_tcp:send(CSock,"ErAccEnCurso");
 								 true -> case element(2,hd(Jugadores)) == N of
-												 true 	-> gen_tcp:send(CSock,"ErAccContraTi");
+												 true 	-> global:send(N, er_acc_vs_ti);%gen_tcp:send(CSock,"ErAccContraTi");
 												 false 	-> global:send(J,{update,Jugadores++[{2,N}],Observadores}),
-																		gen_tcp:send(CSock,"OkAcc "++Juego),
+																		global:send(N,ok_acc),%gen_tcp:send(CSock,"OkAcc "++Juego),
 																		global:send(J,{start})
 												end
 							end
