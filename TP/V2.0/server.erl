@@ -47,10 +47,10 @@ server(Port) ->
 dispatcher(LSock) ->
 		{pbalance,node()} ! {req,self()},							%%psocket lo ejecuto en el nodo menos cargadp
 		receive {send,Nodo} ->
-			{ok, CSock} = spawn(Nodo,?MODULE,gen_tcp:accept,[LSock]),
+			{ok, CSock} = spawn(Nodo,gen_tcp,accept,[LSock]),
 			io:format("CSock: ~p~n",[CSock]),
 			Pid = spawn(Nodo,?MODULE, psocket, [CSock]), %nodo  
-			ok = gen_tcp:controlling_process(CSock, Pid), %%Ahora a CSock lo controla Pid -- los mensajes a CSock llegan a Pid
+			ok = gen_tcp:controlling_process(CSock, Pid) %%Ahora a CSock lo controla Pid -- los mensajes a CSock llegan a Pid
 		end,
 		Pid ! ok,
 		dispatcher(LSock).
