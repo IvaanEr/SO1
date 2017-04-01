@@ -17,7 +17,6 @@
 
 %Comienza el sistema distribuido, con hacer ping a un solo nodo basta.
 %Ya que se sincroniza con todo el sistema.
-
 start(SName,Port,LServer) ->
 	net_kernel:start([SName,shortnames]),
 	case length(LServer) > 0 of
@@ -30,23 +29,29 @@ start(SName,Port,LServer) ->
 server(Port) ->
 	Resolve = fun (_,Pid1,_) -> Pid1 end,
 	{ok,LSock} = gen_tcp:listen(Port, [{packet, 0},{active,false}]), %%server escucha en port Port
+
 	ClientPid = spawn(?MODULE,list_of_client,[[]]), %%creo el proceso que maneja la lista para los clientes
 	yes = global:register_name(clients_pid,ClientPid,Resolve),
+
 	GamesPid = spawn(?MODULE,lists_of_games,[[]]), %%crea el proceso que maneja la lista de juegos en curso.
 	yes = global:register_name(games_pid,GamesPid,Resolve),
-	PidBalance = spawn(?MODULE,pbalance,[]), 
-	register(pbalance,PidBalance),
-	PidStat = spawn(?MODULE,pstat,[]),
-	register(pstat,PidStat),
-	PidCargas = spawn(?MODULE,cargas,[dict:new()]), %%Diccionario para llevar la carga de los nodos
+	
+	PidCargas = spawn(?MODULE,cargas,[orddict:new()]), %%Diccionario para llevar la carga de los nodos
 	yes = global:register_name(cargas,PidCargas,Resolve),
-	global:send(cargas,{newNode,node()}),
+	global:send(cargas,{newNode,node(),statistics(total_active_tasks)}),
+
+	PidBalance = spawn(?MODULE,pbalance,[]), 
+	true = register(pbalance,PidBalance),
+	
+	PidStat = spawn(?MODULE,pstat,[]),
+	true = register(pstat,PidStat),
+	
 	dispatcher(LSock). %%llamo a dispatcher con el listen socket
 
 %% Espera nuevas conexiones y crea un proceso para atender cada una.
 dispatcher(LSock) ->
 		{ok, CSock} = gen_tcp:accept(LSock),
-		io:format("CSock: ~p~n",[CSock]),
+		io:format("OPCIONES: ~p~n",[inet:getopts(CSock,[active,delay_send,buffer,nodelay])]),
 		Pid = spawn(?MODULE, psocket, [CSock]),  
 		ok = gen_tcp:controlling_process(CSock, Pid), %%Ahora a CSock lo controla Pid -- los mensajes a CSock llegan a Pid
 		Pid ! ok,
@@ -63,10 +68,9 @@ psocket_loop(CSock) ->
 	receive
 		{tcp,CSock,Data} ->
 			{pbalance,node()} ! {req,self()},
-			receive {send,Nodo} ->
+			receive {send,Nodo} -> io:format("Nodo: ~p~nNodo Ejec: ~p~n",[node(),Nodo]),
 				case string:tokens(lists:sublist(Data, length(Data)-1)," ") of
-					["CON",Nombre] 	-> io:format("Nodo exc: ~p~n",[Nodo]),
-														 spawn(Nodo,?MODULE,connect,[Nombre,self()]),
+					["CON",Nombre] 	-> spawn(Nodo,?MODULE,connect,[Nombre,self()]),
 
 														receive {con,N} 			 -> io:format("registro exitoso~n"),
 																											 gen_tcp:send(CSock,"OkCon "++atom_to_list(N)),
@@ -89,35 +93,41 @@ receive
 	{tcp,CSock,Data} ->
 			{pbalance,node()} ! {req,self()},
 			receive
-				{send,Nodo} 	 ->	spawn(Nodo,?MODULE, pcommand, [Data,N]),
-													psocket_loop(CSock,N)
+				{send,Nodo} 	 ->	spawn(Nodo,?MODULE, pcommand, [Data,N])%io:format("Nodo: ~p~nNodo Ejec: ~p~n",[node(),Nodo]),
+													
 			end;
-	empate         -> gen_tcp:send(CSock,"Empate"),psocket_loop(CSock,N);
-	er_con2        -> gen_tcp:send(CSock,"ErCon2"),psocket_loop(CSock,N);
-	er_juego_inex  -> gen_tcp:send(CSock,"ErPlaInex"),psocket_loop(CSock,N);
-	{ok_new_game,Nombre}-> gen_tcp:send(CSock,"OkNewGame "++Nombre),psocket_loop(CSock,N);
-	er_new_game    -> gen_tcp:send(CSock,"ErNewGame"),psocket_loop(CSock,N);
-	er_acc_inex    -> gen_tcp:send(CSock,"ErAccInex"), psocket_loop(CSock,N);
-	er_acc_en_curso-> gen_tcp:send(CSock,"ErAccEnCurso"),psocket_loop(CSock,N);
-	er_acc_vs_ti   -> gen_tcp:send(CSock,"ErAccContraTi"), psocket_loop(CSock,N);
-	ok_acc         -> gen_tcp:send(CSock, "OkAcc"), psocket_loop(CSock,N);
-	er_pla_cas1		 -> gen_tcp:send(CSock,"ErPlaCas1"),psocket_loop(CSock,N);
-	er_pla_jug     -> gen_tcp:send(CSock,"ErPlaJug"),psocket_loop(CSock,N);
-	er_pla_cas2    -> gen_tcp:send(CSock,"ErPlaCas2"),psocket_loop(CSock,N);
-	er_pla_turno   -> gen_tcp:send(CSock,"ErPlaTur"),psocket_loop(CSock,N);
-	er_obs_part    -> gen_tcp:send(CSock,"ErObsPart"),psocket_loop(CSock,N);
-	er_obs_ya      -> gen_tcp:send(CSock,"ErObsYa"),psocket_loop(CSock,N);
-	{ok_obs,G}     -> gen_tcp:send(CSock,"OkObs "++G),psocket_loop(CSock,N);
-	er_lea         -> gen_tcp:send(CSock,"ErLea"),psocket_loop(CSock,N);
-	ok_lea         -> gen_tcp:send(CSock,"OkLea"),psocket_loop(CSock,N);
-	{abandona,G}   -> gen_tcp:send(CSock,"Abandona "++G),psocket_loop(CSock,N);
-	{abandona2,J,G}-> gen_tcp:send(CSock,"Abandona2 "++J++" "++G),psocket_loop(CSock,N);
-  er             -> gen_tcp:send(CSock,"Er"), psocket_loop(CSock, N);
+	empate         -> gen_tcp:send(CSock,"Empate");
+	er_con2        -> gen_tcp:send(CSock,"ErCon2");
+	er_juego_inex  -> gen_tcp:send(CSock,"ErPlaInex");
+	{ok_new_game,Nombre}-> gen_tcp:send(CSock,"OkNewGame "++Nombre);
+	er_new_game    -> gen_tcp:send(CSock,"ErNewGame");
+	er_acc_inex    -> gen_tcp:send(CSock,"ErAccInex");
+	er_acc_en_curso-> gen_tcp:send(CSock,"ErAccEnCurso");
+	er_acc_vs_ti   -> gen_tcp:send(CSock,"ErAccContraTi");
+	{ok_acc,J}         -> gen_tcp:send(CSock, "OkAcc "++J);
+	er_pla_cas1		 -> gen_tcp:send(CSock,"ErPlaCas1");
+	er_pla_jug     -> gen_tcp:send(CSock,"ErPlaJug");
+	er_pla_cas2    -> gen_tcp:send(CSock,"ErPlaCas2");
+	er_pla_turno   -> gen_tcp:send(CSock,"ErPlaTur");
 
-	{print,Data}   -> gen_tcp:send(CSock,Data),psocket_loop(CSock,N);
+	er_obs_part    -> gen_tcp:send(CSock,"ErObsPart");
+	er_obs_ya      -> gen_tcp:send(CSock,"ErObsYa");
+	er_obs_nolisto -> gen_tcp:send(CSock,"ErObsNolisto");
+	{ok_obs,G}     -> gen_tcp:send(CSock,"OkObs "++G);
+	
+	er_lea         -> gen_tcp:send(CSock,"ErLea");
+	ok_lea         -> gen_tcp:send(CSock,"OkLea");
+	{abandona,G}   -> gen_tcp:send(CSock,"Abandona "++G);
+	{abandona2,J,G}-> gen_tcp:send(CSock,"Abandona2 "++J++" "++G);
+  er             -> gen_tcp:send(CSock,"Er");
+
+	{print,Data}   -> gen_tcp:send(CSock,Data);
 	
 	{bye,Closed}   -> gen_tcp:close(CSock),exit(Closed)
-end.	
+end,
+receive after 5 -> ok end, %%este "wait" es para que no acumule mensajes en un solo paquete tcp/ip, sino el PM
+psocket_loop(CSock,N).     %%no funciona como es esperado.
+
 
 pcommand(Data,N) ->
 	
@@ -136,11 +146,13 @@ pcommand(Data,N) ->
 
 %%Encargado de mandar la info de carga al resto de los nodos
 %%Cada cierto tiempo, le envio al proceso global cargas "quien soy" y el estado de mi carga.
+%% Se actualiza cada 5 segundos pero solo para que la prueba del balanceo sea mas dinamica y no tener
+%% que esperar 20 segundos para ver si cambiaron los estados. ----- Cambiar a 30000 para algo mas realista.
 pstat() -> 
 	Carga = statistics(total_active_tasks),
 	global:send(cargas,{update,node(),Carga}),
- 
-	receive after 20000 -> ok end,
+	receive after 5000 -> ok end,
+	 
 	pstat().
 
 %% Cuando alguien (Pid) le pide el nodo con menor carga. pbalance le pregunta a cargas cual es este nodo
@@ -157,16 +169,19 @@ pbalance() ->
 %% Si se agrega un nuevo nodo, lo agrega al dicc
 %% pstat de cada nodo regularmente le informa la carga
 %% cuando pbalance le pide un nodo, le envia el de menor carga
-cargas(Dict) ->
+%% Para chequear que hace bien el balanceo descomentar los io:format
+%%   compilar "inf.erl", hacer spawn de infinite(0) para cargar un nodo.
+cargas(D) ->
 	receive
-	{newNode,Node}      -> cargas(dict:store(Node,statistics(total_active_tasks),Dict));
-	{update,Node,Carga} -> cargas(dict:store(Node,Carga,Dict)); 
+	{newNode,Node,C}      -> cargas(orddict:store(Node,C,D));%io:format("Before newnode:~p~n",[D]);
+	{update,Node,Carga} -> cargas(orddict:store(Node,Carga,D));%io:format("Before update: ~p~n",[D]); 
 	{req,Pid}           ->  %Magia negra para calcular el nombre del nodo de menor carga.
-													Min = dict:fold(fun(K,V,{S,C})-> 	if V < C -> {K,V};
+													Min = orddict:fold(fun(K,V,{S,C})-> if V < C -> {K,V};
 																															true -> {S,C} 
-																														end end,{node(),dict:fetch(node(),Dict)},Dict),
+																														end end,hd(D),D),
 													Pid ! {send,element(1,Min)},
-													cargas(Dict)
+													%io:format("Before req:~p~nMin:~p~n",[D,Min]),
+													cargas(D)
 	end.
 
 %Comando CON. Registra un usuario con Nombre.	
@@ -247,7 +262,7 @@ acc(Juego,N) ->
 								 true -> case element(2,hd(Jugadores)) == N of
 												 true 	-> global:send(N, er_acc_vs_ti);%gen_tcp:send(CSock,"ErAccContraTi");
 												 false 	-> global:send(J,{update,Jugadores++[{2,N}],Observadores}),
-																		global:send(N,ok_acc),%gen_tcp:send(CSock,"OkAcc "++Juego),
+																		global:send(N,{ok_acc,Juego}),%gen_tcp:send(CSock,"OkAcc "++Juego),
 																		global:send(J,{start})
 												end
 							end
@@ -289,7 +304,8 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
 																					 game(J,TNew,Jugadores,Observadores,TurnoNew)
 																 end
 												end;
-		{start} ->X = game:es_turno(Turno,Jugadores),
+		{start} ->%receive after 50 -> ok end,
+						  X = game:es_turno(Turno,Jugadores),
 							global:send(X,{print,"-- Es tu turno "++atom_to_list(X)++" --~n"}),
 							Aux = "+ "++atom_to_list(J)++" | "++atom_to_list(element(2,hd(Jugadores)))++" (X) | "++atom_to_list(element(2,lists:nth(2,Jugadores)))++" (0) +~n~n",
 							lists:foreach(fun(Y) -> global:send(element(2,Y),{print,Aux}),global:send(element(2,Y),{print,game:tprint(Tablero)}) end,Jugadores),
@@ -302,6 +318,10 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
 %%Comando PLA. Actualiza, si esta permitido, la Casilla del juego NJuego.	
 jugada(NJuego,Casilla,N) ->
 	J = list_to_atom(NJuego),
+
+	%Gracias a Erlang, se hace esto para chequear que casilla es lo que se espera.
+	Ascii = list_to_integer(lists:flatmap(fun erlang:integer_to_list/1, Casilla)),
+	
 	global:send(games_pid,{req,self()}),
 	receive {send,L} ->
 		case lists:member(J,L) of
@@ -312,11 +332,11 @@ jugada(NJuego,Casilla,N) ->
 								exit(normal);
 							true -> ok
 					end,
-					case (Casilla < "1") or (Casilla > "9") of
+					case ((Ascii < 49) or (Ascii > 57)) of %%En ascii: 49 -> 1 y 57 -> 9
 						true -> global:send(N,er_pla_cas1),exit(normal);
 						false -> ok
 					end,
-					C = list_to_integer(Casilla),
+					C = Ascii - 48,
 					global:send(J,{datos2,self()}),
 					receive
 						{send,T,Jugadores,_,Turno} ->
@@ -368,7 +388,11 @@ observa(Juego,N) ->
 			false -> global:send(N,er_juego_inex); %%Utilizo el mismo mensaje que antes. El error es el mismo.
 			true -> global:send(J,{datos2,self()}),
 							receive
-								{send,Tablero,Jugadores,Observadores,Turno} -> 	
+								{send,Tablero,Jugadores,Observadores,Turno} -> 
+									if length(Jugadores) == 1 ->
+											global:send(N,er_obs_nolisto), exit(normal);
+										true -> ok
+									end,
 									case (element(2,hd(Jugadores)) == N) or (element(2,lists:nth(2,Jugadores)) == N) of
 										true -> global:send(N,er_obs_part);
 										false ->	case lists:member(N,Observadores) of
@@ -418,19 +442,19 @@ bye(N) ->
 								 receive
 									{send,Jugadores,Observadores} ->
 										J1 = element(2,hd(Jugadores)),
-										if (length(Jugadores) == 1) and (J1 == N)-> 
-											global:send(X,bye);
+										if (length(Jugadores) == 1) and (J1 == N)-> %%hay uno solo y ese es el que abandono...
+											global:send(X,bye); %%cierro el juego.
 											true -> 
-												J2 = element(2,lists:nth(2,Jugadores)),
-												case J1 == N of
+												J2 = element(2,lists:nth(2,Jugadores)), %%hay dos jugadores
+												case J1 == N of %%J1 abandono
 													 true -> 
-														 global:send(J2,{abandona2,atom_to_list(J1),X}),
-														 lists:foreach( fun (Z) -> global:send(Z,{abandona2,atom_to_list(J1),X}) end,Observadores),
+														 global:send(J2,{abandona2,atom_to_list(J1),atom_to_list(X)}),
+														 lists:foreach( fun (Z) -> global:send(Z,{abandona2,atom_to_list(J1),atom_to_list(X)}) end,Observadores),
 														 global:send(X,bye); 
-													 false -> case J2 == N of
+													 false -> case J2 == N of %J2 abandono
 																			true ->
-																				global:send(J1,{abandona2,atom_to_list(J2),X}),
-																				lists:foreach( fun (Y) -> global:send(Y,{abandona2,atom_to_list(J2),X}) end,Observadores),
+																				global:send(J1,{abandona2,atom_to_list(J2),atom_to_list(X)	}),
+																				lists:foreach( fun (Y) -> global:send(Y,{abandona2,atom_to_list(J2),atom_to_list(X)}) end,Observadores),
 																				global:send(X,bye); 
 																			false -> 
 																				ok 	

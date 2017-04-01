@@ -20,7 +20,7 @@ salida(CSock,Name) ->
 
 entrada(CSock,P) ->
 	case gen_tcp:recv(CSock,0) of
-		{ok,Packet} -> 
+		{ok,Packet} -> io:format("Packet: ~p~n",[string:tokens(Packet," ")]),
 			case string:tokens(Packet," ") of
 				["ErReg"]        -> io:format("Primero debes registrarte. Utilice CON [Id]~n");
 				["Er"]           -> io:format("Comando Incorrecto  ¯\\_(ツ)_/¯ HELP para la ayuda~n");
@@ -40,7 +40,7 @@ entrada(CSock,P) ->
 				["ErNewGame"]    -> io:format("Nombre de juego en uso.~n");
 
 				["ErPlaInex"]    -> io:format("Juego inexistente.~n");
-				["ErPlaCas1"]    -> io:format("Casilla incorrecta [Rango].~n");
+				["ErPlaCas1"]    -> io:format("Casilla incorrecta [Fuera de rango][Caracter invalido].~n");
 				["ErPlaCas2"]		 -> io:format("Casilla incorrecta [Ocupada].~n");
 				["ErPlaJug"]     -> io:format("Aun falta un jugador.~n");
 				["ErPlaTur"]     -> io:format("No es tu turno o no perticipas en ese juego.~n");
@@ -50,6 +50,7 @@ entrada(CSock,P) ->
 
 				["ErObsPart"]    -> io:format("No puedes observar un juego en el que participas.~n");
 				["ErObsYa"]      -> io:format("Ya estas observando ese juego.~n");
+				["ErObsNolisto"] -> io:format("Este juego aun no ha comenzado.~n");
 				["OkObs",G]      -> io:format("Comenzaste a observar "++G++".~n");
 
 				["ErLea"]        -> io:format("No estas observando ese juego.~n");
