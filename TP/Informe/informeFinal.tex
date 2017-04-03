@@ -95,22 +95,22 @@ El trabajo práctico consta de tres archivos que permiten su funcionamiento:
 
 \subsection*{Conceptos de diseño}
 \begin{itemize}
-  \blacktr Al inicializar un servidor, se crea un nuevo proceso donde se llevará una lista con los nombres de los clientes de todo el sistema distribuido llamado \texttt{list_of_client}, que se registra globalmente con el nombre de \texttt{clients_pid} para poder acceder a este proceso desde cualquier nodo. Se realiza lo mismo, para un proceso registrado globalmente como \texttt{games_pid} para llevar los nombres de las partidas en curso. Además tanto los clientes como las partidas en curso han sido registradas globalmente. Se da inicio y registro local a los procesos de \texttt{pbalance} y \texttt{pstat}. Se inicia y registra globalmente la el proceso \texttt{cargas} que sera encargado de mantener un diccionario actualizado, gracias a \texttt{pstat}, de los nodos del sistema con su respectiva carga. Luego de iniciar estos procesos claves para el almacenamiento de información y funcionamiento del sistema se pasa a la función \texttt{dispatcher} con el Socket donde el nodo recibe conexiones entrantes.
+  \blacktr Al inicializar un servidor, se crea un nuevo proceso donde se llevará una lista con los nombres de los clientes de todo el sistema distribuido llamado \texttt{list_of_client}, que se registra globalmente con el nombre de \texttt{clients_pid} para poder acceder a este proceso desde cualquier nodo. Se realiza lo mismo, para un proceso registrado globalmente como \texttt{games_pid} para llevar los nombres de las partidas en curso. Además tanto los clientes como las partidas en curso han sido registradas globalmente. Se da inicio y registro local a los procesos de \texttt{pbalance} y \texttt{pstat}. Se inicia y registra globalmente el proceso \texttt{cargas} que sera encargado de mantener un diccionario actualizado, gracias a \texttt{pstat}, de los nodos del sistema con su respectiva carga. Luego de iniciar estos procesos claves para el almacenamiento de información y funcionamiento del sistema se pasa a la función \texttt{dispatcher} con el Socket donde el nodo recibe conexiones entrantes.$^{(1)}$
 
-  \blacktr Con respecto al balanceo, la función \texttt{pstat} se encarga de enviarle a la función \texttt{cargas} el estado de carga del nodo (recordar que \texttt{pstat} esta registrada localmente). Luego, cuando un proceso le solicita a \texttt{pbalance} el nodo de menor carga, esté se lo solicita a \texttt{cargas} y luego se lo envia al proceso que lo solicito.$^{(1)}$ 
+  \blacktr Con respecto al balanceo, la función \texttt{pstat} se encarga de enviarle a la función \texttt{cargas} el estado de carga del nodo (recordar que \texttt{pstat} esta registrada localmente). Luego, cuando un proceso le solicita a \texttt{pbalance} el nodo de menor carga, esté se lo solicita a \texttt{cargas} y luego se lo envia al proceso que lo solicito.$^{(2)}$ 
 
-  \blacktr Un juego consta de sus jugadores, observadores, el tablero de juego, y de quien es el turno actual. Los jugadores dentro de un juego estan almacenados de la forma \texttt{\{N,Jugador\}}, donde \texttt{N} es un 1 o un 2 correspondiente al turno y \texttt{Jugador} es el nombre registrado globalmente (un átomo). Por diseño, el usuario que crea el juego con el comando \texttt{NEW} va a ser el jugador número 1 y el turno se establece de forma seudo aleatoria.
+  \blacktr Un juego consta de sus jugadores, observadores, el tablero de juego, y de quien es el turno actual. Los jugadores dentro de un juego estan almacenados de la forma \texttt{\{N,Jugador\}}, donde \texttt{N} es un 1 o un 2 correspondiente al turno y \texttt{Jugador} es el nombre registrado globalmente (un átomo). Por diseño, el usuario que crea el juego con el comando \texttt{NEW} va a ser el jugador número 1 y siempre comienza a jugar el usuario que creo el juego, es decir jugador número 1.
 
   \blacktr Cuando se realiza un cambio en un juego, el servidor envía automáticamente a cada jugador y observador de ese juego el nuevo tablero indicando quien fue el jugador que realizó esa jugada. Se obvió el comando \texttt{UPD} por esto, ya que esta alternativa parece más clara y eficiente para los usuarios. 
 \end{itemize}
 
 \subsection*{Inicializar el sistema}
 \begin{itemize}
-    \blacktr Antes de inicializar la consola de Erlang, ejecutamos el comando \texttt{\textdollar epmd -daemon} por si el comando \texttt{\textdollar erl} arranca automaticamente el epmd (Erlang  Port  Mapper  Daemonepmd). Es para evitar el error "register/listen error: econnrefused".
+    \blacktr Antes de inicializar la consola de Erlang, ejecutamos el comando \texttt{\textdollar epmd -daemon} por si el comando \texttt{\textdollar erl} arranca automaticamente el epmd (Erlang  Port  Mapper  Daemonepmd). Se hace para evitar el error "register/listen error: econnrefused".
     
-    \blacktr Antes de abrir la terminal de Erlang con \texttt{\textdollar erl} debemos conocer la IP del equipo en la red. Una de las formas de obtenerla es con el comando \texttt{\textdollar ipconfig}. Una vez que tenemos la IP abrimos la terminal de Erlang de la siguiente manera: \texttt{erl -name nodo@IP}, donde \texttt{nodo} es el nombre que le queremos dar al mismo y \texttt{IP} la que se obtuvo anteriormente.
+    \blacktr Antes de abrir la terminal de Erlang con \texttt{\textdollar erl} debemos conocer la IP del equipo en la red. Una de las formas de obtenerla es con el comando \texttt{\textdollar ipconfig}. Una vez que tenemos la IP abrimos la terminal de Erlang de la siguiente manera: \texttt{erl -name nodo@IP -setcookie Cookie}, donde \texttt{nodo} es el nombre que le queremos dar al mismo, \texttt{IP} la que se obtuvo anteriormente y \texttt{Cookie} puede ser cualquier atomo que se elija pero debe ser el mismo en todos los nodos. 
     
-    \blacktr Compilamos el servidor con \texttt{c(server).} El servidor se arranca con la función \texttt{start\textbackslash2} del módulo \texttt{server}. Esta función toma como parametros un nombre para el nodo (puede ser el mismo con el que se abrio el shell), un puerto disponible y una lista con el nombre de los demás nodos de la forma \texttt{nodo@IP} que en principio puede ser vacia ya que no hay otros nodos en el sistema. 
+    \blacktr Compilamos el servidor con \texttt{c(server).} El servidor se arranca con la función \texttt{start\textbackslash3} del módulo \texttt{server}. Esta función toma como parametros un nombre para el nodo (puede ser el mismo con el que se abrio el shell), un puerto disponible y una lista con el nombre de los demás nodos de la forma \texttt{'nodo@IP'} que en principio puede ser vacia ya que no hay otros nodos en el sistema. 
 
     \blacktr El sistema deberia sincronizarse automaticamente con los demas nodos de la red (si los hubiera), para chequear esto se puede utilizar la funcion \texttt{nodes()} que nos devuelve una lista de todos los demas nodos del sistema.
 
@@ -118,9 +118,9 @@ El trabajo práctico consta de tres archivos que permiten su funcionamiento:
 
 \subsection*{Como jugar}
 \begin{itemize}
-   \blacktr Un usuario para conectarse deberá poseer el archivo \texttt{client.erl} y conocer la IP de uno de los nodos del sistema y su puerto. Una vez se conoce esto, compilamos el archivo en una terminal de Erlang con \texttt{c(client).} y nos conectamos con la función \texttt{client:con\textbackslash2} pasandole como argumento la IP y el puerto. 
+   \blacktr Un usuario para conectarse deberá poseer el archivo \texttt{client.erl} y conocer la IP de uno de los nodos del sistema y su puerto. Una vez que se conoce esto, compilamos el archivo en una terminal de Erlang con \texttt{c(client).} y nos conectamos con la función \texttt{client:con\textbackslash2} pasandole como argumento la IP y el puerto del nodo. 
   
-  \blacktr Lo primero que se debe hacer es registrarse con un nombre de usuario (\texttt{CON [nombre]}). Luego de esto se puede comenzar viendo los juegos disponibles con \texttt{LSG} o creando un nuevo juego \texttt{NEW [nombre juego]}. Para ver todos los comandos disponibles una vez conectado está disponible la ayuda con \texttt{HELP}.
+  \blacktr Lo primero que se debe hacer es registrarse con un nombre de usuario utilizando el comando (\texttt{CON [nombre]}). Luego de esto se puede comenzar viendo los juegos disponibles con \texttt{LSG} o creando un nuevo juego \texttt{NEW [nombre juego]}. Para ver todos los comandos disponibles una vez conectado está disponible la ayuda con \texttt{HELP}.
 
   \blacktr Al estar permitido participar en más de un juego a la vez. Cada vez que se muestra un tablero de un juego, en la parte superior se muestra el nombre del juego y quienes son sus jugadores junto con que simbolo tiene asignado cada uno. Además se indica quien fue el último en realizar una jugada, sobre todo para que los observadores puedan seguir mejor el progreso de una partida y si un jugador está jugando varias partidas simultaneamente pueda saber con exactitud a que juego pertenece el tablero que se le muestra.
 \end{itemize}
@@ -133,10 +133,14 @@ El trabajo práctico consta de tres archivos que permiten su funcionamiento:
 
   \blacktr Cuando un nodo del sistema se cae o se desconecta todos los clientes que tenian su \texttt{psocket} en ese nodo son desconectados del sistema. Se podria implementar que cuando un nodo se caiga los clientes que estaban siendo atendidos por este, sigan conectados al sistema, de forma transparente para el cliente.
 
+  \blacktr Tambien se podria implementar que cuando comienza un juego, no sea siempre el jugador que creo la partida el que comience, sino que sea aleatorio entre ambos jugadores.
+
 
 
 
 \rule{18cm}{0.4pt}
-$^{(1)}$ Eventualmente \texttt{cargas} podria ser el que directamente envie el nodo de menor carga, se mantiene asi para mantener la estructura pedida. No se calcula el minimo en \texttt{pbalance} para no tener que enviarle todo el diccionario.
+$^{(1)}$ La bandera en \texttt{server} se utiliza para que solo se de registro global una sola vez en el primer nodo. A los demas nodos se les notifica de la existencia de estos procesos automaticamente.
+
+$^{(2)}$ Eventualmente \texttt{cargas} podria ser el que directamente envie el nodo de menor carga, se mantiene asi para mantener la estructura pedida. No se calcula el minimo en \texttt{pbalance} para no tener que enviarle todo el diccionario.
 \end{itemize}
 \end{document}

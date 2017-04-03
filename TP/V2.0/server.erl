@@ -21,25 +21,26 @@ start(SName,Port,LServer) ->
 	net_kernel:start([SName,shortnames]),
 	case length(LServer) > 0 of
 			true -> S = hd(LServer),
-							pong = net_adm:ping(S);
-			false -> ok
-	end,
-	spawn(?MODULE,server,[Port]).
+							pong = net_adm:ping(S),
+							spawn(?MODULE,server,[Port,true]);
+			false -> spawn(?MODULE,server,[Port,false])
+	end.
 
-server(Port) ->
-	Resolve = fun (_,Pid1,_) -> Pid1 end,
+server(Port,Flag) ->
 	{ok,LSock} = gen_tcp:listen(Port, [{packet, 0},{active,false}]), %%server escucha en port Port
+	case Flag of
+	false -> %significa que es el primer nodo. Se crean los procesos globales.
+		ClientPid = spawn(?MODULE,list_of_client,[[]]), %%creo el proceso que maneja la lista para los clientes
+		yes = global:register_name(clients_pid,ClientPid,fun global:random_notify_name/3),
 
-	ClientPid = spawn(?MODULE,list_of_client,[[]]), %%creo el proceso que maneja la lista para los clientes
-	yes = global:register_name(clients_pid,ClientPid,Resolve),
-
-	GamesPid = spawn(?MODULE,lists_of_games,[[]]), %%crea el proceso que maneja la lista de juegos en curso.
-	yes = global:register_name(games_pid,GamesPid,Resolve),
-	
-	PidCargas = spawn(?MODULE,cargas,[orddict:new()]), %%Diccionario para llevar la carga de los nodos
-	yes = global:register_name(cargas,PidCargas,Resolve),
-	global:send(cargas,{newNode,node(),statistics(total_active_tasks)}),
-
+		GamesPid = spawn(?MODULE,lists_of_games,[[]]), %%crea el proceso que maneja la lista de juegos en curso.
+		yes = global:register_name(games_pid,GamesPid,fun global:random_notify_name/3),
+		
+		PidCargas = spawn(?MODULE,cargas,[orddict:new()]), %%Diccionario para llevar la carga de los nodos
+		yes = global:register_name(cargas,PidCargas,fun global:random_notify_name/3),
+		global:send(cargas,{newNode,node(),statistics(total_active_tasks)});
+	true -> ok %ya estan creados, los nuevos nodos seran notificados automaticamente
+  end,
 	PidBalance = spawn(?MODULE,pbalance,[]), 
 	true = register(pbalance,PidBalance),
 	
@@ -89,6 +90,9 @@ psocket_loop(CSock) ->
 
 %%Segundo PSocket: Una vez registrado N tiene acceso a los demas comandos.
 psocket_loop(CSock,N) ->
+
+				global:send(clients_pid,{req,self()}),
+				receive {send,L} -> io:format("Clients: ~p~n",[L]) end,
 receive 
 	{tcp,CSock,Data} ->
 			{pbalance,node()} ! {req,self()},
@@ -123,7 +127,8 @@ receive
 
 	{print,Data}   -> gen_tcp:send(CSock,Data);
 	
-	{bye,Closed}   -> gen_tcp:close(CSock),exit(Closed)
+	{bye,Closed}   -> global:send(clients_pid,{elim,N}),
+										gen_tcp:close(CSock),exit(Closed)
 end,
 receive after 5 -> ok end, %%este "wait" es para que no acumule mensajes en un solo paquete tcp/ip, sino el PM
 psocket_loop(CSock,N).     %%no funciona como es esperado.
@@ -166,9 +171,9 @@ pbalance() ->
 	pbalance().
 
 %Proceso que lleva el diccionario {Nodo,Carga}.
-%% Si se agrega un nuevo nodo, lo agrega al dicc
-%% pstat de cada nodo regularmente le informa la carga
-%% cuando pbalance le pide un nodo, le envia el de menor carga
+%% Si se agrega un nuevo nodo, lo agrega al dicc.
+%% El proceso pstat (de cada nodo) regularmente le informa la carga del nodo.
+%% Cuando pbalance le pide un nodo, le envia el de menor carga.
 %% Para chequear que hace bien el balanceo descomentar los io:format
 %%   compilar "inf.erl", hacer spawn de infinite(0) para cargar un nodo.
 cargas(D) ->
@@ -189,11 +194,9 @@ connect(Nombre, PSocketPid) ->
 		N = list_to_atom(Nombre),
 		case global:register_name(N,PSocketPid) of
 				yes -> 	global:send(clients_pid,{new_client,N}),
-								%ok = gen_tcp:send(CSock, "OkCon "++Nombre),
 								io:format("OK CON~n"),
 								PSocketPid ! {con,N};
 				no 	-> 	io:format("ErCon "++Nombre),
-				%gen_tcp:send(CSock, "ErCon "++Nombre),
 				PSocketPid ! {error,Nombre}
 		end.
 
@@ -220,9 +223,9 @@ newgame(NJuego,N) ->
 	J = list_to_atom(NJuego),
 	Game = spawn(?MODULE,game_init,[N,J]),
 	case global:register_name(J,Game) of
-		yes -> global:send(N,{ok_new_game,NJuego}),%gen_tcp:send(CSock,"OkNewGame "++NJuego),
+		yes -> global:send(N,{ok_new_game,NJuego}),
 					 global:send(games_pid,{new,J});
-		no 	-> global:send(N,er_new_game) %gen_tcp:send(CSock,"ErNewGame")
+		no 	-> global:send(N,er_new_game) 
 	end.
 	
 %Comando LSG. Para cada juego, su ID y participantes.
@@ -255,14 +258,14 @@ acc(Juego,N) ->
 	global:send(games_pid,{req,self()}),
 	receive
 	{send,L} -> case lists:member(J,L) of
-				false -> global:send(N, er_acc_inex); %gen_tcp:send(CSock,"ErAccInex");
+				false -> global:send(N, er_acc_inex);
 				true  -> global:send(J,{datos,self()}),
 						 receive {send,Jugadores,Observadores} ->
-							if length(Jugadores) == 2 -> global:send(N, er_acc_en_curso);%gen_tcp:send(CSock,"ErAccEnCurso");
+							if length(Jugadores) == 2 -> global:send(N, er_acc_en_curso);
 								 true -> case element(2,hd(Jugadores)) == N of
-												 true 	-> global:send(N, er_acc_vs_ti);%gen_tcp:send(CSock,"ErAccContraTi");
+												 true 	-> global:send(N, er_acc_vs_ti);
 												 false 	-> global:send(J,{update,Jugadores++[{2,N}],Observadores}),
-																		global:send(N,{ok_acc,Juego}),%gen_tcp:send(CSock,"OkAcc "++Juego),
+																		global:send(N,{ok_acc,Juego}),
 																		global:send(J,{start})
 												end
 							end
@@ -275,7 +278,7 @@ game_init(N,J) ->
 	Tablero = game:inicializar_tablero(),
 	Jugadores = [{1,N}],
 	Observadores = [],
-	Turno = (random:uniform(1000) rem 2)+1, %un numero aleatorio entre 1 y 2, para que no empiece siempre el mismo
+	Turno = 1,
 	io:format("Turno: ~p~n",[Turno]),
 	game(J,Tablero,Jugadores,Observadores,Turno).
 
@@ -441,6 +444,8 @@ bye(N) ->
 		lists:foreach(fun (X) -> global:send(X,{datos,self()}),
 								 receive
 									{send,Jugadores,Observadores} ->
+										Aux = lists:member(N,Observadores),
+										if Aux -> global:send(X,{update,Jugadores,lists:delete(N,Observadores)}),global:send(N,{bye,normal}),exit(normal) end,
 										J1 = element(2,hd(Jugadores)),
 										if (length(Jugadores) == 1) and (J1 == N)-> %%hay uno solo y ese es el que abandono...
 											global:send(X,bye); %%cierro el juego.

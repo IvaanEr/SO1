@@ -20,7 +20,7 @@ salida(CSock,Name) ->
 
 entrada(CSock,P) ->
 	case gen_tcp:recv(CSock,0) of
-		{ok,Packet} -> io:format("Packet: ~p~n",[string:tokens(Packet," ")]),
+		{ok,Packet} -> %io:format("Packet: ~p~n",[string:tokens(Packet," ")]),
 			case string:tokens(Packet," ") of
 				["ErReg"]        -> io:format("Primero debes registrarte. Utilice CON [Id]~n");
 				["Er"]           -> io:format("Comando Incorrecto  ¯\\_(ツ)_/¯ HELP para la ayuda~n");
