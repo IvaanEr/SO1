@@ -1,9 +1,8 @@
 -module(game).
 -compile(export_all).
 
-
+%%Imprime la ayuda a N.
 help(N) ->
-	% A = "CON 'id', logearse como id\n",
 	B = "LSG, muestra todas las partidas~n",
 	C = "NEW [juegoid], comienza un nuevo juego como juegoid~n",
 	D = "ACC [juegoid], accede a jugar al juego juegoid~n",
@@ -48,17 +47,16 @@ upd(Juego,Jugadores,Tablero,Observadores,Turno) ->
 	presentacion_j(Juego,Jugadores,Tablero,Turno),
 	presentacion_o(Juego,Jugadores,Tablero,Observadores,Turno).
 
-%Para imprimir el tablero con su JuegoID|J1|J2.
+%Para imprimir el tablero con su JuegoID | J1 | J2.
+%Imprime en jugadores
 presentacion_j(G,J,T,Turno) ->
 	Aux = "+ "++atom_to_list(G)++" | "++atom_to_list(element(2,lists:nth(1,J)))++" (X) | "++atom_to_list(element(2,lists:nth(2,J)))++" (0) +~n~n",
 	JAUX = es_turno(Turno,J),
-	% io:format("Pruebaaaa: "++atom_to_list(JAUX)++"~n"),
 	lists:foreach(fun(X) -> global:send(element(2,X),{print,Aux}), global:send(element(2,X),{print,"Turno: "++atom_to_list(JAUX)++"\n"}),global:send(element(2,X),{print,tprint(T)}) end,J).
-
+%Imprime en observadores
 presentacion_o(G,J,T,O,Turno) ->
 	Aux = "+ "++atom_to_list(G)++" | "++atom_to_list(element(2,lists:nth(1,J)))++" (X) | "++atom_to_list(element(2,lists:nth(2,J)))++" (0) +\n\n",
 	JAUX = es_turno(Turno,J),
-	% io:format("Pruebaaaa: "++atom_to_list(JAUX)++"~n"),
 	lists:foreach(fun(X) -> global:send(X,{print,Aux}),global:send(X,{print,"Turno: "++atom_to_list(JAUX)++"\n"}), global:send(X,{print,tprint(T)}) end,O).
 
 
@@ -87,6 +85,24 @@ diagonal(T) ->
 	(((find(1,T) == find(5,T)) and (find(5,T) == find(9,T))) and (find(1,T) /= " ")) or
 	(((find(7,T) == find(5,T)) and (find(5,T) == find(3,T))) and (find(7,T) /= " ")).
 
+%Chequeo si hay empate
+empate(T) ->
+	A =  (find(1,T) /= " "),
+	B =	 (find(2,T) /= " "),
+	C =	 (find(3,T) /= " "),
+	D =	 (find(4,T) /= " "),
+	F =	 (find(5,T) /= " "),
+	G =	 (find(6,T) /= " "),
+	H =	 (find(7,T) /= " "),
+	I =	 (find(8,T) /= " "),
+	J =	 (find(9,T) /= " "),
+	if ((((((((A and B) and C) and D) and F) and G) and H) and I) and J) ->
+		true;
+	true -> false
+	end.
+
+%%No se usan mucho. Dado un Mensaje y la lista de observadores o jugadores
+%% envia el mensaje a las usuarios.
 send_msj_obs(L,Data) ->
 	lists:foreach(fun (X) -> global:send(X,{print,Data}) end ,L).
 
@@ -106,7 +122,7 @@ send_msj_j2(Jugadores,Data) ->
 						 global:send(J2,{print,Data})
 	end.
 
-
+%%Imprime lo correspondiente dependiendo quien gano.
 ganoJ1(Jugadores,Observadores) ->
 	J1 = atom_to_list(element(2,hd(Jugadores))),
 	send_msj_j1(Jugadores,"Ganaste!~n"),
@@ -137,17 +153,3 @@ es_turno(Turno,Jugadores) ->
 		 					end
 	end.
 	
-empate(T) ->
-	A =  (find(1,T) /= " "),
-	B =	 (find(2,T) /= " "),
-	C =	 (find(3,T) /= " "),
-	D =	 (find(4,T) /= " "),
-	F =	 (find(5,T) /= " "),
-	G =	 (find(6,T) /= " "),
-	H =	 (find(7,T) /= " "),
-	I =	 (find(8,T) /= " "),
-	J =	 (find(9,T) /= " "),
-	if ((((((((A and B) and C) and D) and F) and G) and H) and I) and J) ->
-		true;
-	true -> false
-	end.

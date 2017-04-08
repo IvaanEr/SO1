@@ -1,26 +1,33 @@
 -module(client).
 -compile(export_all).
 
-%binary,{packet, 0},{active,false}
-
+%%Para conectarse al sistema distribuido
+% Argumentos: Ip: IP (Internet Protocol) del nodo al que se quiere conectar
+%             Port: Puerto donde ese nodo esta "escuchando"
 con(Ip,Port) ->
 	{ok,CSock} = gen_tcp:connect(Ip,Port,[{packet,0},{active,false}]),
 	io:format("Bienvenido!~nRecuerde, primero debes conectarte con el comando CON [id].~n"),
 	P = spawn(?MODULE,salida,[CSock,[]]),
 	entrada(CSock,P).
 
+%%Argumentos: CSock: Client Socket, donde el cliente escucha, recibe y envia los mensajes del server.
+%             Name: Una vez que el cliente se conecta con un nombre de usuario, es reemplazado con su nombre.
+%% Espero que el cliente tipee un comando y luego se lo envio al servidor.
 salida(CSock,Name) ->
 	Cmd = io:get_line(Name++"> "),
 	gen_tcp:send(CSock,Cmd),
-	receive 
+	receive
 		{new,N} -> salida(CSock,N);
 		sigue -> salida(CSock,Name)
+	after
+		15000 -> salida(CSock,Name)
 	end.
 
-
+%%Argumentos: CSock: Client Socket, donde el cliente escucha, recibe y envia los mensajes del server.
+%             P: Pid de salida/2
 entrada(CSock,P) ->
 	case gen_tcp:recv(CSock,0) of
-		{ok,Packet} -> %io:format("Packet: ~p~n",[string:tokens(Packet," ")]),
+		{ok,Packet} ->
 			case string:tokens(Packet," ") of
 				["ErReg"]        -> io:format("Primero debes registrarte. Utilice CON [Id]~n");
 				["Er"]           -> io:format("Comando Incorrecto  ¯\\_(ツ)_/¯ HELP para la ayuda~n");
@@ -41,7 +48,7 @@ entrada(CSock,P) ->
 
 				["ErPlaInex"]    -> io:format("Juego inexistente.~n");
 				["ErPlaCas1"]    -> io:format("Casilla incorrecta [Fuera de rango][Caracter invalido].~n");
-				["ErPlaCas2"]		 -> io:format("Casilla incorrecta [Ocupada].~n");
+				["ErPlaCas2"]	 -> io:format("Casilla incorrecta [Ocupada].~n");
 				["ErPlaJug"]     -> io:format("Aun falta un jugador.~n");
 				["ErPlaTur"]     -> io:format("No es tu turno o no perticipas en ese juego.~n");
 
@@ -58,7 +65,7 @@ entrada(CSock,P) ->
 
 				["Empate"]       -> io:format("Han empatado. Al menos no perdieron ¯\\_(ツ)_/¯~n");
 
-				_Else						 -> io:format(Packet)	
+				_Else			 -> io:format(Packet)	
 			end;
 
 		{error,closed} -> io:format("Se ha cerrado la conexión  (っ◕‿◕)っ~n")
