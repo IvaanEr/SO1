@@ -80,7 +80,7 @@ psocket_loop(CSock) ->
 				case string:tokens(lists:sublist(Data, length(Data)-1)," ") of
 					["CON",Nombre] 	-> spawn(Nodo,?MODULE,connect,[Nombre,self()]),
 
-														receive {con,N} 			 -> %io:format("registro exitoso~n"),
+														receive {con,N} 			 -> io:format("registro exitoso~n"),
 																											 gen_tcp:send(CSock,"OkCon "++atom_to_list(N)),
 																							 					psocket_loop(CSock,N);
 																		{error,Nombre} -> gen_tcp:send(CSock, "ErCon "++Nombre),psocket_loop(CSock)
@@ -145,7 +145,7 @@ psocket_loop(CSock,N).     %%no funciona como es esperado.
 pcommand(Data,N) ->
 	
 	case string:tokens(lists:sublist(Data, length(Data)-1)," ") of
-		["CON",_]               -> global:send(N,er_con2);
+		["CON",_]               -> io:format("entraste al CON~n");%N ! er_con2;
 		["LSG"]                 -> lsg(N);
 		["NEW", NJuego]         -> newgame(NJuego,N);
 		["ACC", Juego]  				-> acc(Juego,N);
@@ -203,11 +203,13 @@ cargas(D) ->
 %             PSocketPid: Pid (Process ID) del proceso PSocket que esta atendiendo a este usuario	
 connect(Nombre, PSocketPid) ->
 		N = list_to_atom(Nombre),
+		io:format("entre al connect~n"),
 		case register(N,PSocketPid) of
-				yes -> 	clients_pid ! {new_client,N},
-								%io:format("OK CON~n"),
+				true -> 	io:format("Entre al connect~n"),
+								clients_pid ! {new_client,N},
+								io:format("OK CON~n"),
 								PSocketPid ! {con,N};
-				no 	-> 	%
+				false 	-> 	%
 				%io:format("ErCon "++Nombre),
 				PSocketPid ! {error,Nombre}
 		end.
