@@ -128,7 +128,7 @@ receive
 	ok_lea         -> gen_tcp:send(CSock,"OkLea");
 	{abandona,G}   -> gen_tcp:send(CSock,"Abandona "++G);
 	{abandona2,J,G}-> gen_tcp:send(CSock,"Abandona2 "++J++" "++G);
-  er             -> gen_tcp:send(CSock,"Er");
+    er             -> gen_tcp:send(CSock,"Er");
 
 	{print,Data}   -> gen_tcp:send(CSock,Data);
 	

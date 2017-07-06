@@ -15,37 +15,45 @@
 %%se usa lists:nth ya que sino deberia llamar a dos funciones: "tl" que me devuelve
 %%UNA LISTA con el ultimo elemento (ya que solo son 2) y a "hd" para obetener ese elemento
 
-%Comienza el sistema distribuido
-%Argumentos: SName: Un nombre para el nodo
-%            Port : Puerto libre para que el nodo reciba conexiones
-%            LServer: Lista con los nombres de los demas nodos del sistema. (Puede ser vacia)
+%%Comienza el sistema distribuido
+%%Argumentos: SName: Un nombre para el nodo
+%%            Port : Puerto libre para que el nodo reciba conexiones
+%%            LServer: Lista con los nombres de los demas nodos del sistema. (Puede ser vacia)
+
+%% UPD: Quitamos el segundo argumento de server, porque ya no necesitamos la bandera.
+
 start(SName,Port,LServer) ->
 	net_kernel:start([SName,shortnames]),
 	case length(LServer) > 0 of
 			true -> S = hd(LServer),
 							pong = net_adm:ping(S),
-							spawn(?MODULE,server,[Port,true]);
-			false -> spawn(?MODULE,server,[Port,false])
+							spawn(?MODULE,server,[Port]);
+			false -> spawn(?MODULE,server,[Port])
 	end.
 
-%Argumentos: Port: Puerto con el que se inicio el nodo
-%			 Flag: Indica si es el primer nodo del sistema, para saber si es necesario
-%                   crear los procesos que son registrados globalmente
-server(Port,Flag) ->
-	{ok,LSock} = gen_tcp:listen(Port, [{packet, 0},{active,false}]), %%server escucha en port Port
-	case Flag of
-	false -> %significa que es el primer nodo. Se crean los procesos globales.
+%%Argumentos: Port: Puerto con el que se inicio el nodo
+%%			 Flag: Indica si es el primer nodo del sistema, para saber si es necesario
+%%                   crear los procesos que son registrados globalmente
+
+%% UPD: Al no tener procesos globales ya no se chequea si hay que crearlos o no.
+%%  		Ahora son todos registrados localmente.
+        
+server(Port) ->
+	{ok,LSock} = gen_tcp:listen(Port, [{packet, 0},{active,false}]), %%Server escucha en port Port
+	
+	%% false -> %significa que es el primer nodo. Se crean los procesos globales.
 		PidListOfClients = spawn(?MODULE,list_of_client,[[]]), %%creo el proceso que maneja la lista para los clientes
 		true = register(clients_pid,PidListOfClients),
 
-		GamesPid = spawn(?MODULE,lists_of_games,[[]]), %%crea el proceso que maneja la lista de juegos en curso.
-		yes = global:register_name(games_pid,GamesPid,fun global:random_notify_name/3),
+		GamesPid = spawn(?MODULE,lists_of_games,[[]]), %%Crea el proceso que maneja la lista de juegos en curso.
+		true = register(games_pid,GamesPid),
 		
 		PidCargas = spawn(?MODULE,cargas,[orddict:new()]), %%Diccionario para llevar la carga de los nodos
-		yes = global:register_name(cargas,PidCargas,fun global:random_notify_name/3),
-		global:send(cargas,{newNode,node(),statistics(total_active_tasks)});
-	true -> ok %ya estan creados, los nuevos nodos seran notificados automaticamente
-  end,
+		true = register(cargas,PidCargas),
+		%% VER !!!!!!!!!!!!!!!!global:send(cargas,{newNode,node(),statistics(total_active_tasks)});
+
+%% true -> ok %ya estan creados, los nuevos nodos seran notificados automaticamente
+  
 	PidBalance = spawn(?MODULE,pbalance,[]), 
 	true = register(pbalance,PidBalance),
 	
@@ -56,7 +64,7 @@ server(Port,Flag) ->
 	dispatcher(LSock). %%llamo a dispatcher con el listen socket
 
 %% Espera nuevas conexiones y crea un proceso para atender cada una.
-% Argumentos: LSock: Listen Socket del nodo
+%% Argumentos: LSock: Listen Socket del nodo
 dispatcher(LSock) ->
 		{ok, CSock} = gen_tcp:accept(LSock),
 		Pid = spawn(?MODULE, psocket, [CSock]),  
@@ -64,8 +72,8 @@ dispatcher(LSock) ->
 		Pid ! ok,
 		dispatcher(LSock).
 	
-%Atendera todos los pedidos del cliente hablando en CSock.
-% Argumentos: CSock: Client Socket de cada cliente que se conecto al nodo
+%%Atendera todos los pedidos del cliente hablando en CSock.
+%% Argumentos: CSock: Client Socket de cada cliente que se conecto al nodo
 psocket(CSock) ->
 	receive ok -> ok end, %%para que controlling process suceda antes que setopts.
 	ok = inet:setopts(CSock	,[{active,true}]), %%recivo msjs con receive, no con gen_tcp:recv.	
@@ -79,7 +87,6 @@ psocket_loop(CSock) ->
 			receive {send,Nodo} -> %io:format("Nodo: ~p~nNodo Ejec: ~p~n",[node(),Nodo]),
 				case string:tokens(lists:sublist(Data, length(Data)-1)," ") of
 					["CON",Nombre] 	-> spawn(Nodo,?MODULE,connect,[Nombre,self()]),
-
 														receive {con,N} 			 -> io:format("registro exitoso~n"),
 																											 gen_tcp:send(CSock,"OkCon "++atom_to_list(N)),
 																							 					psocket_loop(CSock,N);
@@ -96,8 +103,8 @@ psocket_loop(CSock) ->
 
 
 %%Segundo PSocket: Una vez registrado N tiene acceso a los demas comandos.
-% Argumentos: CSock: Client Socket de cada cliente que se conecto al nodo
-%             N: [atomo] Nombre que eligio el cliente para conectarse al server
+%% Argumentos: CSock: Client Socket de cada cliente que se conecto al nodo
+%%             N: [atomo] Nombre que eligio el cliente para conectarse al server
 psocket_loop(CSock,N) ->
 receive 
 	{tcp,CSock,Data} ->
@@ -140,8 +147,8 @@ receive after 5 -> ok end, %%este "wait" es para que no acumule mensajes en un s
 psocket_loop(CSock,N).     %%no funciona como es esperado.
 
 
-%Argumentos: Data: Cadena de caracteres que llega desde un usuario
-%            N: [atomo] Usuario que envio Data.
+%%Argumentos: Data: Cadena de caracteres que llega desde un usuario
+%%            N: [atomo] Usuario que envio Data.
 pcommand(Data,N) ->
 	
 	case string:tokens(lists:sublist(Data, length(Data)-1)," ") of
@@ -184,7 +191,7 @@ pbalance() ->
 %% Cuando pbalance le pide un nodo, le envia el de menor carga.
 %% Para chequear que hace bien el balanceo descomentar los io:format
 %%   y compilando "inf.erl", hacer spawn de infinite(0) para cargar un nodo.
-% Argumentos: D: Diccionario {clave,valor} con clave: Nodo y valor: Carga
+%% Argumentos: D: Diccionario {clave,valor} con clave: Nodo y valor: Carga
 cargas(D) ->
 	receive
 	{newNode,Node,C}      -> cargas(orddict:store(Node,C,D));%io:format("Before newnode:~p~n",[D]);
@@ -198,47 +205,73 @@ cargas(D) ->
 													cargas(D)
 	end.
 
-%Comando CON. Registra un usuario con Nombre.
-% Argumentos: Nombre [string]: Nombre que eligio el usuario
-%             PSocketPid: Pid (Process ID) del proceso PSocket que esta atendiendo a este usuario	
+%%Comando CON. Registra un usuario con Nombre.
+%% Argumentos: Nombre [string]: Nombre que eligio el usuario
+%%             PSocketPid: Pid (Process ID) del proceso PSocket que esta atendiendo a este usuario	
+
 connect(Nombre, PSocketPid) ->
 		N = list_to_atom(Nombre),
-		io:format("entre al connect~n"),
-		case register(N,PSocketPid) of
-				true -> 	io:format("Entre al connect~n"),
-								clients_pid ! {new_client,N},
+		%%io:format("entre al connect~n"),
+		case global:register(N,PSocketPid) of
+				yes  -> %%io:format("Entre al connect~n"),
+								lists:foreach( fun(Nodo) -> {clients_pid,Nodo} ! {new_client,N} end ,nodes()),
+                %%clients_pid ! {new_client,N},
 								io:format("OK CON~n"),
 								PSocketPid ! {con,N};
-				false 	-> 	%
-				%io:format("ErCon "++Nombre),
+				false 	->%io:format("ErCon "++Nombre),
 				PSocketPid ! {error,Nombre}
 		end.
 
 %% Lista de los clientes conectados
-% Argumentos: L: Lista de los nombres [atomos] de todos los usuarios conectados.
+%% Argumentos: L: Lista de los nombres [atomos] de todos los usuarios conectados.
+%% UPD : Primero chequeamos si hay otros nodos corriendo, si es asi le pedimos la lista de clientes actualmente conectados.
+%%       Si no, somos el primero y seguimos con la lista vacia.
+
 list_of_client(L) ->
+	case length(nodes()) > 0 of
+    true -> Nodo = hd(nodes()),
+    			  {clients_pid,Nodo} ! {req,self()},
+            receive
+            	{send,LNew} -> list_of_client_loop(LNew)
+						end;
+    false -> list_of_client_loop(L)
+  end.
+  
+list_of_client_loop(L) ->
 		receive
-				{new_client,Client} ->	list_of_client(L++[Client]);
+				{new_client,Client} ->	list_of_client_loop(L++[Client]);
 				{req,Pid} 					->	Pid ! {send,L},
-																list_of_client(L);
-				{elim,N} 						-> 	list_of_client(lists:delete(N,L))
+																list_of_client_loop(L);
+				{elim,N} 						-> 	list_of_client_loop(lists:delete(N,L))
 		end.
 
 %% Lista de todos los juegos en curso.
-% Argumentos: L: Lista de los nombres [atomos] de todos los juegos creados.
+%% Argumentos: L: Lista de los nombres [atomos] de todos los juegos creados.
+
+
 lists_of_games(L) ->
-	receive
-		{new,Juego} 	-> lists_of_games(L++[Juego]);
-		{req,Pid} 		-> Pid ! {send,L},
-										 lists_of_games(L);
-		{elim,Juego} 	-> lists_of_games(lists:delete(Juego,L))
-	end.
+	case length(nodes()) > 0 of
+  	true -> Nodo = hd(nodes()),
+    				{games_pid, Nodo} ! {req, self()},
+    				receive
+            	{send, LNew} -> lists_of_games_loop(LNew)
+            end;
+    false -> lists_of_games_loop(L)
+  end.
+    
+lists_of_games_loop(L)->    
+		receive
+			{new,Juego} 	-> lists_of_games_loop(L++[Juego]);
+			{req,Pid} 		-> Pid ! {send,L},
+                       lists_of_games_loop(L);
+			{elim,Juego} 	-> lists_of_games_loop(lists:delete(Juego,L))
+		end.
 
 
 	
-%Comando LSG. Para cada juego, su ID y participantes.
+%%Comando LSG. Para cada juego, su ID y participantes.
 %%Esta funcion directamente imprime en el cliente.
-%Argumentos: N: Usuario que solicito la lista de los juegos.
+%%Argumentos: N: Usuario que solicito la lista de los juegos.
 lsg(N) ->
 	%%Imprimo nombres, de jugadores o observadores, separados por "|".
 	Imp_datos = fun (L) -> 	lists:foreach(fun (X) -> global:send(N,{print, atom_to_list(X)++" | "}) end,L),
@@ -261,9 +294,9 @@ lsg(N) ->
 											 Obt_datos(X) end, L)
 	end.
 
-%Comando ACC. N accede a Juego si es posible.
-%Argumentos: Juego: [String] Nombre de juego al que se quiere acceder a jugar
-%            N: Usuario que quiere acceder a dicho juego
+%%Comando ACC. N accede a Juego si es posible.
+%%Argumentos: Juego: [String] Nombre de juego al que se quiere acceder a jugar
+%%            N: Usuario que quiere acceder a dicho juego
 acc(Juego,N) ->
 	J = list_to_atom(Juego),
 	global:send(games_pid,{req,self()}),
@@ -284,21 +317,23 @@ acc(Juego,N) ->
 				end
 	end.
 
-%Comando NEW. N crea el juego NJuego.
-%Argumentos: NJuego: [string] Nombre del juego, elegido por el usuario
-%            N: Usuario que creo el juego.
+%%Comando NEW. N crea el juego NJuego.
+%%Argumentos: NJuego: [string] Nombre del juego, elegido por el usuario
+%%            N: Usuario que creo el juego.
 newgame(NJuego,N) ->
 	J = list_to_atom(NJuego),
 	Game = spawn(?MODULE,game_init,[N,J]),
 	case global:register_name(J,Game) of
 		yes -> global:send(N,{ok_new_game,NJuego}),
-					 global:send(games_pid,{new,J});
+					 lists:foreach(fun(Nodo) -> {games_pid,Nodo} ! {new,J} end,nodes());
+           %%global:send(games_pid,{new,J});
 		no 	-> global:send(N,er_new_game) 
 	end.
 
 %%Inicializa el juego. Crea el tablero y parametros iniciales.
-%Argumentos: N: Usuario que creo el juego
-%            J: Nombre del juego
+%%Argumentos: N: Usuario que creo el juego
+%%            J: Nombre del juego
+
 game_init(N,J) ->
 	Tablero = game:inicializar_tablero(),
 	Jugadores = [{1,N}],

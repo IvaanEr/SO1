@@ -42,7 +42,7 @@
 }
 
 \date{
-    Fecha de entrega: -2017
+    Fecha de entrega: 09/06/2017
 }
 
 \title {
@@ -99,7 +99,7 @@ El trabajo práctico consta de tres archivos que permiten su funcionamiento:
 
   \blacktr Con respecto al balanceo, la función \texttt{pstat} se encarga de enviarle a la función \texttt{cargas} el estado de carga del nodo (recordar que \texttt{pstat} esta registrada localmente). Luego, cuando un proceso le solicita a \texttt{pbalance} el nodo de menor carga, esté se lo solicita a \texttt{cargas} y luego se lo envia al proceso que lo solicito.$^{(2)}$ 
 
-  \blacktr Un juego consta de sus jugadores, observadores, el tablero de juego, y de quien es el turno actual. Los jugadores dentro de un juego estan almacenados de la forma \texttt{\{N,Jugador\}}, donde \texttt{N} es un 1 o un 2 correspondiente al turno y \texttt{Jugador} es el nombre registrado globalmente (un átomo). Por diseño, el usuario que crea el juego con el comando \texttt{NEW} va a ser el jugador número 1 y siempre comienza a jugar el usuario que creo el juego, es decir jugador número 1.
+  \blacktr Un juego consta de sus jugadores, observadores, el tablero de juego y de quien es el turno actual. Los jugadores dentro de un juego estan almacenados de la forma \texttt{\{N,Jugador\}}, donde \texttt{N} es un 1 o un 2 correspondiente al turno y \texttt{Jugador} es el nombre registrado globalmente (un átomo). Por diseño, el usuario que crea el juego con el comando \texttt{NEW} va a ser el jugador número 1 y siempre comienza a jugar el usuario que creo el juego, es decir jugador número 1.
 
   \blacktr Cuando se realiza un cambio en un juego, el servidor envía automáticamente a cada jugador y observador de ese juego el nuevo tablero indicando quien fue el jugador que realizó esa jugada. Se obvió el comando \texttt{UPD} por esto, ya que esta alternativa parece más clara y eficiente para los usuarios. 
 \end{itemize}
@@ -120,7 +120,7 @@ El trabajo práctico consta de tres archivos que permiten su funcionamiento:
 \begin{itemize}
    \blacktr Un usuario para conectarse deberá poseer el archivo \texttt{client.erl} y conocer la IP de uno de los nodos del sistema y su puerto. Una vez que se conoce esto, compilamos el archivo en una terminal de Erlang con \texttt{c(client).} y nos conectamos con la función \texttt{client:con\textbackslash2} pasandole como argumento la IP y el puerto del nodo. 
   
-  \blacktr Lo primero que se debe hacer es registrarse con un nombre de usuario utilizando el comando (\texttt{CON [nombre]}). Luego de esto se puede comenzar viendo los juegos disponibles con \texttt{LSG} o creando un nuevo juego \texttt{NEW [nombre juego]}. Para ver todos los comandos disponibles una vez conectado está disponible la ayuda con \texttt{HELP}.
+  \blacktr Lo primero que se debe hacer es registrarse con un nombre de usuario utilizando el comando (\texttt{CON [nombre]}). Luego de esto se puede comenzar viendo los juegos disponibles con \texttt{LSG} o creando un nuevo juego con \texttt{NEW [nombre juego]}. Para ver todos los comandos disponibles una vez conectado está disponible la ayuda con \texttt{HELP}.
 
   \blacktr Al estar permitido participar en más de un juego a la vez. Cada vez que se muestra un tablero de un juego, en la parte superior se muestra el nombre del juego y quienes son sus jugadores junto con que simbolo tiene asignado cada uno. Además se indica quien fue el último en realizar una jugada, sobre todo para que los observadores puedan seguir mejor el progreso de una partida y si un jugador está jugando varias partidas simultaneamente pueda saber con exactitud a que juego pertenece el tablero que se le muestra.
 \end{itemize}
