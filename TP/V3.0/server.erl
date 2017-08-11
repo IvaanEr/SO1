@@ -85,8 +85,10 @@ psocket(CSock) ->
 psocket_loop(CSock) ->
     receive
         {tcp,CSock,Data} ->
+            M = string:tokens(lists:sublist(Data, length(Data)-1)," "),
+            io:format("Data psocket_loop~p~n",[M]),
             {pbalance,node()} ! {req,self()},
-            receive {send,Nodo} -> %io:format("Nodo: ~p~nNodo Ejec: ~p~n",[node(),Nodo]),
+            receive {send,Nodo} -> io:format("Nodo: ~p~nNodo Ejec: ~p~n",[node(),Nodo]),
                 case string:tokens(lists:sublist(Data, length(Data)-1)," ") of
                     ["CON",Nombre] -> spawn(Nodo,?MODULE,connect,[Nombre,self()]),
                                       receive {con,N} -> io:format("Registro exitoso~n"),
@@ -156,7 +158,7 @@ psocket_loop(CSock,N).
 pcommand(Data,N) ->
     
     case string:tokens(lists:sublist(Data, length(Data)-1)," ") of
-        ["CON",_]               -> io:format("entraste al CON~n");%N ! er_con2;
+        ["CON",_]               -> io:format("entraste al CON~n"),N ! er_con2;
         ["LSG"]                 -> lsg(N);
         ["NEW", NJuego]         -> newgame(NJuego,N);
         ["ACC", Juego]          -> acc(Juego,N);
@@ -175,21 +177,22 @@ pcommand(Data,N) ->
 pstat() -> 
     Carga = statistics(total_active_tasks),
     lists:foreach(fun(Node) -> {pbalance,Node} ! {update,Node,Carga} end,nodes()),
-    {pbalance,node()} ! {update,Node,Carga},
+    {pbalance,node()} ! {update,node(),Carga},
     receive after 5000 -> ok end,
     pstat().
 
 %% Cuando alguien (Pid) le pide el nodo con menor carga. pbalance le pregunta a cargas cual es este nodo
 pbalance(Map) -> 
     receive
-        {update,Node,Carga} -> Map#{Node => Carga};
-        {req,Pid} -> MinSearch = fun(K,V,AccIn) -> if V < AccIn -> V;
-                                                      true -> AccIn 
-                                                   end
+        {update,Node,Carga} -> pbalance(Map#{Node => Carga});
+        {req,Pid} -> MinSearch = fun(K,V,{Node,AccIn}) -> if V < AccIn -> {K,V};
+                                                             true -> {Node,AccIn} 
+                                                          end
                                  end,
-                     Min = maps:fold(MinSearch, infinity, Map)
-    end,
-    pbalance().
+                     {N,_} = maps:fold(MinSearch, {node(),infinity}, Map),
+                     Pid ! {send,N},
+                     pbalance(Map)
+    end.
 
 % %Proceso que lleva el diccionario {Nodo,Carga}.
 % %% Si se agrega un nuevo nodo, lo agrega al dicc.
@@ -211,13 +214,13 @@ pbalance(Map) ->
 %                                                     cargas(D)
 %     end.
 
-%%Comando CON. Registra un usuario con Nombre.
+%% Comando CON. Registra un usuario con Nombre.
 %% Argumentos: Nombre [string]: Nombre que eligio el usuario
 %%             PSocketPid: Pid (Process ID) del proceso PSocket que esta atendiendo a este usuario  
 
 connect(Nombre, PSocketPid) ->
         N = list_to_atom(Nombre),
-        case global:register(N,PSocketPid) of
+        case global:register_name(N,PSocketPid) of
           yes  -> lists:foreach( fun(Nodo) -> {clients_pid,Nodo} ! {new_client,N} end ,nodes()),
                   {clients_pid,node()} ! {new_client,N}, %nodes no se incluye a si mismo
                   io:format("OK CON~n"),
@@ -236,16 +239,16 @@ list_of_client(L) ->
                   {clients_pid,Nodo} ! {req,self()},
             receive
                 {send,LNew} -> list_of_client_loop(LNew)
-                        end;
+            end;
     false -> list_of_client_loop(L)
   end.
   
 list_of_client_loop(L) ->
         receive
                 {new_client,Client} ->  list_of_client_loop(L++[Client]);
-                {req,Pid}                   ->  Pid ! {send,L},
-                                                                list_of_client_loop(L);
-                {elim,N}                        ->  list_of_client_loop(lists:delete(N,L))
+                {req,Pid}          ->  Pid ! {send,L},
+                                       list_of_client_loop(L);
+                {elim,N}           ->  list_of_client_loop(lists:delete(N,L))
         end.
 
 %% Lista de todos los juegos en curso.
@@ -281,19 +284,19 @@ lsg(N) ->
                                                     global:send(N,{print, "~n"}) end,
     %%Uso Imp_datos para imprimir los jugadores y observadores de cierto juego.                                             
     Obt_datos = fun (Game) -> global:send(Game,{datos,self()}),
-                                                        receive
-                                                        {send,Jugadores,Observadores} -> global:send(N,{print,"Jugadores:~n"}),
-                                                                                         Imp_datos(lists:map(fun(X)-> element(2,X) end,Jugadores)),
-                                                                                         global:send(N,{print, "Observadores:~n"}),
-                                                                                         Imp_datos(Observadores),
-                                                                                         global:send(N,{print, "············~n~n"})
-                                                        end
+                receive
+                {send,Jugadores,Observadores} -> global:send(N,{print,"Jugadores:~n"}),
+                                                    Imp_datos(lists:map(fun(X)-> element(2,X) end,Jugadores)),
+                                                    global:send(N,{print, "Observadores:~n"}),
+                                                    Imp_datos(Observadores),
+                                                    global:send(N,{print, "············~n~n"})
+                end
                             end,
     global:send(N,{print,"Lista de juegos:~n"}),
     %%Uso Obt_datos para imprimir jugadores y observadores de todos los juegos.
-    global:send(games_pid,{req,self()}),
+    {games_pid,node()} ! {req,self()},
     receive
-        {send,L} -> lists:foreach(fun (X) -> global:send(N,{print,"Juego: "++atom_to_list(X)++"~2n"}),
+        {send,L} -> lists:foreach(fun (X) -> global:send(N,{print,"Juego: "++atom_to_list(X)++"~n"}),
                                              Obt_datos(X) end, L)
     end.
 
@@ -302,14 +305,14 @@ lsg(N) ->
 %%            N: Usuario que quiere acceder a dicho juego
 acc(Juego,N) ->
     J = list_to_atom(Juego),
-    global:send(games_pid,{req,self()}),
+    {games_pid,node()} ! {req,self()},
     receive
     {send,L} -> case lists:member(J,L) of
                 false -> global:send(N, er_acc_inex);
                 true  -> global:send(J,{datos,self()}),
                          receive {send,Jugadores,Observadores} ->
                             if length(Jugadores) == 2 -> global:send(N, er_acc_en_curso);
-                                 true -> case element(2,hd(Jugadores)) == N of
+                                 true -> case element(2,hd(Jugadores)) == N of %%no puedo jugar contra mi mismo
                                                  true   -> global:send(N, er_acc_vs_ti);
                                                  false  -> global:send(J,{update,Jugadores++[{2,N}],Observadores}),
                                                                         global:send(N,{ok_acc,Juego}),
@@ -328,7 +331,8 @@ newgame(NJuego,N) ->
     Game = spawn(?MODULE,game_init,[N,J]),
     case global:register_name(J,Game) of
         yes -> global:send(N,{ok_new_game,NJuego}),
-                     lists:foreach(fun(Nodo) -> {games_pid,Nodo} ! {new,J} end,nodes());
+                     lists:foreach(fun(Nodo) -> {games_pid,Nodo} ! {new,J} end,nodes()),
+                     {games_pid,node()} ! {new,J};
            %%global:send(games_pid,{new,J});
         no  -> global:send(N,er_new_game) 
     end.
@@ -336,7 +340,6 @@ newgame(NJuego,N) ->
 %%Inicializa el juego. Crea el tablero y parametros iniciales.
 %%Argumentos: N: Usuario que creo el juego
 %%            J: Nombre del juego
-
 game_init(N,J) ->
     Tablero = game:inicializar_tablero(),
     Jugadores = [{1,N}],
@@ -361,13 +364,17 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
         {update2,TNew} -> game:upd(J,Jugadores,TNew,Observadores,Turno),
                                              case game:gano(TNew) of
                                                 true -> case Turno == 1 of
-                                                                    true  -> game:ganoJ1(Jugadores,Observadores),global:send(games_pid,{elim,J}),exit(normal);
-                                                                    false -> game:ganoJ2(Jugadores,Observadores),global:send(games_pid,{elim,J}),exit(normal)
-                                                                end;
+                                                            true  -> game:ganoJ1(Jugadores,Observadores),
+                                                                     lists:foreach(fun(Node) -> {games_pid,Node} ! {elim,J} end,nodes()),
+                                                                     {games_pid,node()} ! {elim,J}, exit(normal);
+                                                            false -> game:ganoJ2(Jugadores,Observadores),
+                                                                    lists:foreach(fun(Node) -> {games_pid,Node} ! {elim,J} end,nodes()),
+                                                                    {games_pid,node()} ! {elim,J}, exit(normal)
+                                                        end;
                                                 false -> case game:empate(TNew) of
-                                                                    true -> lists:foreach(fun(X)->global:send(element(2,X),empate) end,Jugadores),
+                                                                    true -> lists:foreach(fun(X)->(global:send(element(2,X),empate)) end,Jugadores),
                                                                                     lists:foreach(fun(Y)->global:send(Y,empate) end,Observadores),
-                                                                                    global:send(games_pid,{elim,J}),exit(normal);
+                                                                                    lists:foreach(fun(Node)-> {games_pid, Node}!{elim,J} end, nodes()),exit(normal);
                                                                     false -> TurnoNew = game:turno(Turno),
                                                                                      X = game:es_turno(TurnoNew,Jugadores),
                                                                                      global:send(X,{print,"-- Es tu turno "++atom_to_list(X)++" --~n"}), 
