@@ -12,7 +12,7 @@
 
 %%Observación:
 %%Para acceder al segundo jugador de la lista de jugadores de un juego especifico
-%%se usa lists:nth ya que sino deberia llamar a dos funciones: "tl" que me devuelve
+%%se usa lists:nth ya que sino deberia llamar a dos funciones: "tl" que me devuvelve
 %%UNA LISTA con el ultimo elemento (ya que solo son 2) y a "hd" para obetener ese elemento
 
 %%Comienza el sistema distribuido
@@ -25,11 +25,12 @@
 start(SName,Port,LServer) ->
     net_kernel:start([SName,shortnames]),
     case length(LServer) > 0 of
-            true -> S = hd(LServer),
+            true -> S = hd(LServer), %io:format("Server ~p~n",[S]),
                             pong = net_adm:ping(S),
                             spawn(?MODULE,server,[Port]);
             false -> spawn(?MODULE,server,[Port])
     end.
+
 
 %%Argumentos: Port: Puerto con el que se inicio el nodo
 %%           Flag: Indica si es el primer nodo del sistema, para saber si es necesario
@@ -71,7 +72,13 @@ dispatcher(LSock) ->
         ok = gen_tcp:controlling_process(CSock, Pid), %%Ahora a CSock lo controla Pid -- los mensajes a CSock llegan a Pid
         Pid ! ok,
         dispatcher(LSock).
-    
+
+%% Envia al proceso Proc de todos los nodos el mensaje.
+%% Utilizada para enviar mensajes a los proces games_pid y clients_pid
+send_nodes(Proc,Message) ->
+    lists:foreach(fun(Node) -> {Proc, Node} ! Message end,nodes()),
+    {Proc,node()} ! Message.
+
 %%Atendera todos los pedidos del cliente hablando en CSock.
 %% Argumentos: CSock: Client Socket de cada cliente que se conecto al nodo
 psocket(CSock) ->
@@ -176,6 +183,7 @@ pcommand(Data,N) ->
 %% que esperar X segundos para ver si cambiaron los estados. ----- Cambiar a 30000 para algo mas realista.
 pstat() -> 
     Carga = statistics(total_active_tasks),
+    %No utlizo send_nodes porque necesito enviar el nombre del nodo...
     lists:foreach(fun(Node) -> {pbalance,Node} ! {update,Node,Carga} end,nodes()),
     {pbalance,node()} ! {update,node(),Carga},
     receive after 5000 -> ok end,
@@ -245,10 +253,11 @@ list_of_client(L) ->
   
 list_of_client_loop(L) ->
         receive
-                {new_client,Client} ->  list_of_client_loop(L++[Client]);
+                {new_client,Client} -> io:format("Clients [new]: ~p~n",[L++[Client]]),list_of_client_loop(L++[Client]);
                 {req,Pid}          ->  Pid ! {send,L},
+                                       io:format("Clients [req]: ~p~n",[L]),
                                        list_of_client_loop(L);
-                {elim,N}           ->  list_of_client_loop(lists:delete(N,L))
+                {elim,N}           ->  io:format("Clients [elim]: ~p~n",[lists:delete(N,L)]),list_of_client_loop(lists:delete(N,L))
         end.
 
 %% Lista de todos los juegos en curso.
@@ -269,7 +278,7 @@ lists_of_games_loop(L)->
         receive
             {new,Juego}     -> lists_of_games_loop(L++[Juego]);
             {req,Pid}       -> Pid ! {send,L},
-                       lists_of_games_loop(L);
+                               lists_of_games_loop(L);
             {elim,Juego}    -> lists_of_games_loop(lists:delete(Juego,L))
         end.
 
@@ -331,8 +340,9 @@ newgame(NJuego,N) ->
     Game = spawn(?MODULE,game_init,[N,J]),
     case global:register_name(J,Game) of
         yes -> global:send(N,{ok_new_game,NJuego}),
-                     lists:foreach(fun(Nodo) -> {games_pid,Nodo} ! {new,J} end,nodes()),
-                     {games_pid,node()} ! {new,J};
+                     send_nodes(games_pid,{new,J});
+                     %lists:foreach(fun(Nodo) -> {games_pid,Nodo} ! {new,J} end,nodes()),
+                     %{games_pid,node()} ! {new,J};
            %%global:send(games_pid,{new,J});
         no  -> global:send(N,er_new_game) 
     end.
@@ -365,16 +375,22 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
                                              case game:gano(TNew) of
                                                 true -> case Turno == 1 of
                                                             true  -> game:ganoJ1(Jugadores,Observadores),
-                                                                     lists:foreach(fun(Node) -> {games_pid,Node} ! {elim,J} end,nodes()),
-                                                                     {games_pid,node()} ! {elim,J}, exit(normal);
+                                                                     send_nodes(games_pid,{elim,J}),
+                                                                    %%  lists:foreach(fun(Node) -> {games_pid,Node} ! {elim,J} end,nodes()),
+                                                                    %%  {games_pid,node()} ! {elim,J},
+                                                                    exit(normal);
                                                             false -> game:ganoJ2(Jugadores,Observadores),
-                                                                    lists:foreach(fun(Node) -> {games_pid,Node} ! {elim,J} end,nodes()),
-                                                                    {games_pid,node()} ! {elim,J}, exit(normal)
+                                                                     send_nodes(games_pid,{elim,J}),
+                                                                    %%  lists:foreach(fun(Node) -> {games_pid,Node} ! {elim,J} end,nodes()),
+                                                                    %% {games_pid,node()} ! {elim,J},
+                                                                    exit(normal)
                                                         end;
                                                 false -> case game:empate(TNew) of
                                                                     true -> lists:foreach(fun(X)->(global:send(element(2,X),empate)) end,Jugadores),
-                                                                                    lists:foreach(fun(Y)->global:send(Y,empate) end,Observadores),
-                                                                                    lists:foreach(fun(Node)-> {games_pid, Node}!{elim,J} end, nodes()),exit(normal);
+                                                                            lists:foreach(fun(Y)->global:send(Y,empate) end,Observadores),
+                                                                            send_nodes(games_pid,{elim,J}),
+                                                                            %lists:foreach(fun(Node)-> {games_pid, Node}!{elim,J} end, nodes()),
+                                                                            exit(normal);
                                                                     false -> TurnoNew = game:turno(Turno),
                                                                                      X = game:es_turno(TurnoNew,Jugadores),
                                                                                      global:send(X,{print,"-- Es tu turno "++atom_to_list(X)++" --~n"}), 
@@ -388,7 +404,10 @@ game(J,Tablero,Jugadores,Observadores,Turno) ->
                             lists:foreach(fun(Y) -> global:send(element(2,Y),{print,Aux}),global:send(element(2,Y),{print,game:tprint(Tablero)}) end,Jugadores),
                             lists:foreach(fun(Z) -> global:send(Z,{print,Aux}),global:send(Z,{print,game:tprint(Tablero)}) end,Observadores),
                             game(J,Tablero,Jugadores,Observadores,Turno);
-        bye -> global:send(games_pid,{elim,J}),exit(normal)
+        bye -> send_nodes(games_pid,{elim,J}),
+            %%    lists:foreach(fun(Node) -> {games_pid,Node} ! {elim,J}, nodes()),
+            %%    {games_pid,node()} ! {elim,J},
+            exit(normal)
     end.
 
 
@@ -399,7 +418,7 @@ jugada(NJuego,Casilla,N) ->
     %Gracias a Erlang, se hace esto para chequear que "Casilla" es lo que se espera.
     Ascii = list_to_integer(lists:flatmap(fun erlang:integer_to_list/1, Casilla)),
     
-    global:send(games_pid,{req,self()}),
+    {games_pid,node()} ! {req,self()},
     receive {send,L} ->
         case lists:member(J,L) of
                 false -> global:send(N,er_juego_inex); %el juego no existe...
@@ -461,7 +480,8 @@ abandona(N,NJuego) ->
 %% El jugador N quiere comenzar a observar Juego.
 observa(Juego,N) ->
     J = list_to_atom(Juego),
-    global:send(games_pid,{req,self()}),
+    {games_pid,node()} ! {req,self()},
+    %global:send(games_pid,{req,self()}),
     receive {send,L} ->
         case lists:member(J,L) of
             false -> global:send(N,er_juego_inex); %%Utilizo el mismo mensaje que antes. El error es el mismo.
@@ -473,28 +493,30 @@ observa(Juego,N) ->
                                         true -> ok
                                     end,
                                     case (element(2,hd(Jugadores)) == N) or (element(2,lists:nth(2,Jugadores)) == N) of
-                                        true -> global:send(N,er_obs_part);
+                                        true -> global:send(N,er_obs_part); %%no puedes observar si participas en el juego
                                         false ->    case lists:member(N,Observadores) of
-                                                                true -> global:send(N,er_obs_ya);
-                                                                false ->  global:send(games_pid,{req,self()}),
-                                                                                    receive {send,L} ->
-                                                                                        case lists:member(J,L) of
-                                                                                            false -> global:send(N,er_juego_inex);
-                                                                                            true -> global:send(N,{ok_obs,Juego}),
-                                                                                                            game:presentacion_o(J,Jugadores,Tablero,[N],Turno),
-                                                                                                            global:send(J,{update,Jugadores,Observadores++[N]})
-                                                                                        end
-                                                                                    end
-                                                            end
-                                    end
+                                                                true -> global:send(N,er_obs_ya); %%ya estas observando
+                                                                false ->  %global:send(games_pid,{req,self()}),
+                                                                                    %% receive {send,L} ->
+                                                                                    %%     case lists:member(J,L) of
+                                                                                    %%         false -> global:send(N,er_juego_inex);
+                                                                                            %% true -> 
+                                                                        global:send(N,{ok_obs,Juego}),
+                                                                        game:presentacion_o(J,Jugadores,Tablero,[N],Turno),
+                                                                        global:send(J,{update,Jugadores,Observadores++[N]})
+                                                                                        
+                                                    end
+                                     end
                             end
+                            
         end
     end.                            
 
 %%El jugador N quiere dejar de observar NJuego
 lea(N,NJuego) ->
     J = list_to_atom(NJuego),
-    global:send(games_pid,{req,self()}),
+    {games_pid,node()} ! {req,self()},
+    %global:send(games_pid,{req,self()}),
     receive
         {send,L} -> 
             case lists:member(J,L) of
@@ -517,13 +539,15 @@ lea(N,NJuego) ->
 %%que ha abandonado.
 %%Tambien, si esta observando algun juego. Lo sacamos de la lista Observadores de dicho juego.
 bye(N) ->
-    global:send(games_pid,{req,self()}),
+    {games_pid,node()} ! {req,self()},
+    %% global:send(games_pid,{req,self()}),
     receive {send,L} ->
         lists:foreach(fun (X) -> global:send(X,{datos,self()}),
                                  receive
                                     {send,Jugadores,Observadores} ->
                                         Aux = lists:member(N,Observadores),
-                                        if Aux -> global:send(X,{update,Jugadores,lists:delete(N,Observadores)}),global:send(N,{bye,normal}),exit(normal) end,
+                                        if Aux -> global:send(X,{update,Jugadores,lists:delete(N,Observadores)}),
+                                                  global:send(N,{bye,normal}),exit(normal) end,
                                         J1 = element(2,hd(Jugadores)),
                                         if (length(Jugadores) == 1) and (J1 == N)-> %%hay uno solo y ese es el que abandono...
                                             global:send(X,bye); %%cierro el juego.
