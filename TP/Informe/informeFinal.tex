@@ -11,6 +11,7 @@
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage[version=4]{mhchem}
+\usepackage{xcolor,sectsty}
 
 \newcommand{\dbquote}[1]{\textquotedblleft#1\textquotedblright}
 \newcommand{\blacktr}[0]{\item[$\blacktriangleright$]}
@@ -25,6 +26,11 @@
            {α}{$\alpha$}{1}
            {δ}{$\delta$}{1}
 }
+
+
+\definecolor{myred}{RGB}{128,0,32}
+\subsectionfont{\color{myred}}
+\sectionfont{\color{myred}}
 
 
 \linespread{1.3}
@@ -95,9 +101,9 @@ El trabajo práctico consta de tres archivos que permiten su funcionamiento:
 
 \subsection*{Conceptos de diseño}
 \begin{itemize}
-  \blacktr Al inicializar un servidor, se crea un nuevo proceso donde se llevará una lista con los nombres de los clientes de todo el sistema distribuido llamado \texttt{list_of_client}, que se registra globalmente con el nombre de \texttt{clients_pid} para poder acceder a este proceso desde cualquier nodo. Se realiza lo mismo, para un proceso registrado globalmente como \texttt{games_pid} para llevar los nombres de las partidas en curso. Además tanto los clientes como las partidas en curso han sido registradas globalmente. Se da inicio y registro local a los procesos de \texttt{pbalance} y \texttt{pstat}. Se inicia y registra globalmente el proceso \texttt{cargas} que sera encargado de mantener un diccionario actualizado, gracias a \texttt{pstat}, de los nodos del sistema con su respectiva carga. Luego de iniciar estos procesos claves para el almacenamiento de información y funcionamiento del sistema se pasa a la función \texttt{dispatcher} con el Socket donde el nodo recibe conexiones entrantes.$^{(1)}$
+  \blacktr Al inicializar un servidor, se crea un nuevo proceso donde se llevará una lista con los nombres de los clientes de todo el sistema distribuido llamado \texttt{list_of_client}, que se registra localmente con el nombre de \texttt{clients_pid} para poder acceder a este proceso desde otros nodos del sistema y así mantener las estructuras consistentes. Se realiza lo mismo, para el proceso \texttt{games_pid} para llevar los nombres de las partidas en curso. Además tanto los clientes como las partidas en curso han sido registradas globalmente. Se da inicio y registro local a los procesos de \texttt{pbalance} y \texttt{pstat} que seran los encargados de balancear la carga de trabajos entre los nodos. Luego de iniciar estos procesos claves para el almacenamiento de información y funcionamiento del sistema se pasa a la función \texttt{dispatcher} con el Socket donde el nodo recibe conexiones entrantes.%%$^{(1)}$
 
-  \blacktr Con respecto al balanceo, la función \texttt{pstat} se encarga de enviarle a la función \texttt{cargas} el estado de carga del nodo (recordar que \texttt{pstat} esta registrada localmente). Luego, cuando un proceso le solicita a \texttt{pbalance} el nodo de menor carga, esté se lo solicita a \texttt{cargas} y luego se lo envia al proceso que lo solicito.$^{(2)}$ 
+  \blacktr Con respecto al balanceo, la función \texttt{pstat} se encarga de enviarle a la función \texttt{pbalance}de cada nodo en el sistema el estado de carga del nodo (recordar que \texttt{pstat} y \texttt{pbalance} esta registrada localmente). Luego, cuando un proceso le solicita a \texttt{pbalance} el nodo de menor carga, esté lo envia al proceso que lo solicito.%$^{(2)}$ 
 
   \blacktr Un juego consta de sus jugadores, observadores, el tablero de juego y de quien es el turno actual. Los jugadores dentro de un juego estan almacenados de la forma \texttt{\{N,Jugador\}}, donde \texttt{N} es un 1 o un 2 correspondiente al turno y \texttt{Jugador} es el nombre registrado globalmente (un átomo). Por diseño, el usuario que crea el juego con el comando \texttt{NEW} va a ser el jugador número 1 y siempre comienza a jugar el usuario que creo el juego, es decir jugador número 1.
 
@@ -108,11 +114,11 @@ El trabajo práctico consta de tres archivos que permiten su funcionamiento:
 \begin{itemize}
     \blacktr Antes de inicializar la consola de Erlang, ejecutamos el comando \texttt{\textdollar epmd -daemon} por si el comando \texttt{\textdollar erl} arranca automaticamente el epmd (Erlang  Port  Mapper  Daemonepmd). Se hace para evitar el error "register/listen error: econnrefused".
     
-    \blacktr Antes de abrir la terminal de Erlang con \texttt{\textdollar erl} debemos conocer la IP del equipo en la red. Una de las formas de obtenerla es con el comando \texttt{\textdollar ipconfig}. Una vez que tenemos la IP abrimos la terminal de Erlang de la siguiente manera: \texttt{erl -name nodo@IP -setcookie Cookie}, donde \texttt{nodo} es el nombre que le queremos dar al mismo, \texttt{IP} la que se obtuvo anteriormente y \texttt{Cookie} puede ser cualquier atomo que se elija pero debe ser el mismo en todos los nodos.
+    \blacktr Antes de abrir la terminal de Erlang con \texttt{\textdollar erl} debemos conocer la IP del equipo en la red. Una de las formas de obtenerla es con el comando \texttt{\textdollar ifconfig}. Una vez que tenemos la IP abrimos la terminal de Erlang de la siguiente manera: \texttt{erl -name nodo@IP -setcookie Cookie}, donde \texttt{nodo} es el nombre que le queremos dar al mismo, \texttt{IP} la que se obtuvo anteriormente y \texttt{Cookie} puede ser cualquier atomo que se elija pero debe ser el mismo en todos los nodos.
     
     \blacktr Compilamos el servidor con \texttt{c(server).} El servidor se arranca con la función \texttt{start\textbackslash3} del módulo \texttt{server}. Esta función toma como parametros un nombre para el nodo (puede ser el mismo con el que se abrio el shell), un puerto disponible y una lista con el nombre de los demás nodos de la forma \texttt{'nodo@IP'} que en principio puede ser vacia ya que no hay otros nodos en el sistema. 
 
-    \blacktr El sistema deberia sincronizarse automaticamente con los demas nodos de la red (si los hubiera), para chequear esto se puede utilizar la funcion \texttt{nodes()} que nos devuelve una lista de todos los demas nodos del sistema.
+    \blacktr El sistema deberia sincronizarse automaticamente con los demás nodos de la red (si los hubiera), para chequear esto se puede utilizar la función \texttt{nodes()} que nos devuelve una lista de todos los demás nodos del sistema.
 
 \end{itemize}
 
@@ -135,12 +141,6 @@ El trabajo práctico consta de tres archivos que permiten su funcionamiento:
 
   \blacktr Tambien se podria implementar que cuando comienza un juego, no sea siempre el jugador que creo la partida el que comience, sino que sea aleatorio entre ambos jugadores.
 
-
-
-
 \rule{18cm}{0.4pt}
-$^{(1)}$ La bandera en \texttt{server} se utiliza para que solo se de registro global una sola vez en el primer nodo. A los demas nodos se les notifica de la existencia de estos procesos automaticamente.
-
-$^{(2)}$ Eventualmente \texttt{cargas} podria ser el que directamente envie el nodo de menor carga, se mantiene asi para mantener la estructura pedida. No se calcula el minimo en \texttt{pbalance} para no tener que enviarle todo el diccionario.
 \end{itemize}
 \end{document}
