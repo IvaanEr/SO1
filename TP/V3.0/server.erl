@@ -61,8 +61,16 @@ server(Port) ->
     
     PidStat = spawn(?MODULE,pstat,[]),
     true = register(pstat,PidStat),
+
+    PidTest = spawn(?MODULE,sendtest,[]),
+    true = register(sendtest,PidTest),
     
     dispatcher(LSock). %%llamo a dispatcher con el listen socket
+
+sendtest() ->
+    receive
+        {Node,Msg} -> io:format("~p me envio ~p~n",[Node,Msg])
+    end.
 
 %% Espera nuevas conexiones y crea un proceso para atender cada una.
 %% Argumentos: LSock: Listen Socket del nodo
@@ -154,7 +162,7 @@ receive
     {bye,Closed}   -> clients_pid ! {elim,N},
                       gen_tcp:close(CSock),exit(Closed)
 end,
-%%este "wait" es para que no acumule mensajes en un solo paquete tcp/ip, sino el PM
+%%este "wait" es para que no acumule mensajes en un solo paquete tcp/ip, sino el PatterMatching
 %%no funciona como es esperado.
 receive after 5 -> ok end,
 psocket_loop(CSock,N).     
@@ -184,22 +192,33 @@ pcommand(Data,N) ->
 pstat() -> 
     Carga = statistics(total_active_tasks),
     %No utlizo send_nodes porque necesito enviar el nombre del nodo...
-    lists:foreach(fun(Node) -> {pbalance,Node} ! {update,Node,Carga} end,nodes()),
+    % io:format("pstat Nodes: ~p~n",[nodes()]),
+    lists:foreach(fun(Node) -> {pbalance,Node} ! {update,node(),Carga} end,nodes()),
     {pbalance,node()} ! {update,node(),Carga},
     receive after 5000 -> ok end,
     pstat().
 
-%% Cuando alguien (Pid) le pide el nodo con menor carga. pbalance le pregunta a cargas cual es este nodo
 pbalance(Map) -> 
     receive
-        {update,Node,Carga} -> pbalance(Map#{Node => Carga});
+        % {updateOther,Node,Carga} -> pbalance(Map#{Node => Carga});
+        {update,Node,Carga} -> NewMap = Map#{Node=>Carga},
+                               pbalance(NewMap);
         {req,Pid} -> MinSearch = fun(K,V,{Node,AccIn}) -> if V < AccIn -> {K,V};
                                                              true -> {Node,AccIn} 
                                                           end
                                  end,
                      {N,_} = maps:fold(MinSearch, {node(),infinity}, Map),
+
                      Pid ! {send,N},
                      pbalance(Map)
+        % %para testear
+        % after 1000 -> MinSearch = fun(K,V,{Node,AccIn}) -> if V < AccIn -> {K,V};
+        %                                                       true -> {Node,AccIn} 
+        %                                                    end
+        %                            end,
+        %               {N,_} = maps:fold(MinSearch, {node(),infinity}, Map),
+        %               io:format("Map: ~p~nMinimo: ~p~n",[Map,N]),
+        %               pbalance(Map)
     end.
 
 % %Proceso que lleva el diccionario {Nodo,Carga}.
@@ -276,10 +295,11 @@ lists_of_games(L) ->
     
 lists_of_games_loop(L)->    
         receive
-            {new,Juego}     -> lists_of_games_loop(L++[Juego]);
+            {new,Juego}     -> io:format("Juegos [new]: ~p~n",[L++[Juego]]),lists_of_games_loop(L++[Juego]);
             {req,Pid}       -> Pid ! {send,L},
+                               io:format("Juegos [new]: ~p~n",[L]),
                                lists_of_games_loop(L);
-            {elim,Juego}    -> lists_of_games_loop(lists:delete(Juego,L))
+            {elim,Juego}    -> io:format("Juegos [new]: ~p~n",[lists:delete(Juego,L)]),lists_of_games_loop(lists:delete(Juego,L))
         end.
 
 
@@ -508,7 +528,7 @@ observa(Juego,N) ->
                                                     end
                                      end
                             end
-                            
+                                        
         end
     end.                            
 
