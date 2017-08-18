@@ -567,8 +567,9 @@ bye(N) ->
                                     {send,Jugadores,Observadores} ->
                                         Aux = lists:member(N,Observadores),
                                         if Aux -> global:send(X,{update,Jugadores,lists:delete(N,Observadores)}),
-                                                  global:send(N,{bye,normal}),exit(normal) end,
-                                        J1 = element(2,hd(Jugadores)),
+                                                  global:send(N,{bye,normal}),exit(normal);
+                                    true ->
+                                        J1 = element(2,hd(Jugadores)), %si existe un juego, al menos tiene un jugador...
                                         if (length(Jugadores) == 1) and (J1 == N)-> %%hay uno solo y ese es el que abandono...
                                             global:send(X,bye); %%cierro el juego.
                                             true -> 
@@ -587,7 +588,7 @@ bye(N) ->
                                                                                 ok  
                                                                         end
                                                 end
-                                        end
+                                    end    end  
                                     end end, L),
         global:send(N,{bye,normal})
     end.
